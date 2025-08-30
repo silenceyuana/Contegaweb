@@ -205,7 +205,15 @@ app.post('/api/login', async (req, res) => {
         const payload = { id: player.id, player_name: player.player_name };
         const token = jwt.sign(payload, jwtSecret, { expiresIn: '1d' }); // Token 有效期1天
 
-        res.json({ message: '登录成功', token: token });
+        res.json({ 
+    message: '登录成功', 
+    token: token,
+    // 在这里添加 user 对象
+    user: {
+        id: player.id,
+        username: player.player_name 
+    }
+});
 
     } catch (err) {
         console.error('登录时发生服务器错误:', err);
