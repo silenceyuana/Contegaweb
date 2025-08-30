@@ -173,16 +173,18 @@ app.get('/api/player/status', verifyToken, async (req, res) => {
     }
 });
 
+// server.js (修复后的版本)
+
 // 处理玩家签到
 app.post('/api/player/checkin', verifyToken, async (req, res) => {
     const { id: playerId } = req.user;
     try {
-        // 1. 再次从数据库获取最新信息，防止并发问题
+        // 1. 从数据库获取最新信息
         const { data: player, error: fetchError } = await supabase
             .from('players')
             .select('score, last_checkin_date')
             .eq('id', playerId)
-            .single();
+            .single(); // 这里用 single() 是正确的，因为我们期望只找到一个玩家
         
         if (fetchError) throw fetchError;
 
@@ -193,17 +195,20 @@ app.post('/api/player/checkin', verifyToken, async (req, res) => {
         }
 
         // 3. 计算奖励并更新数据库
-        const gainedScore = Math.floor(Math.random() * 51); // 0-50 的随机整数
+        const gainedScore = Math.floor(Math.random() * 51);
         const newTotalScore = player.score + gainedScore;
 
-        const { data: updatedPlayer, error: updateError } = await supabase
+        // 【重要修复】: .update().select() 返回的是数组，所以去掉 .single()
+        const { data: updatedData, error: updateError } = await supabase
             .from('players')
             .update({ score: newTotalScore, last_checkin_date: today })
             .eq('id', playerId)
-            .select('score')
-            .single();
+            .select('score'); // 去掉了 .single()
 
         if (updateError) throw updateError;
+
+        // 【重要修复】: 从返回的数组中取出第一个元素
+        const updatedPlayer = updatedData[0];
         
         res.json({
             message: `签到成功！获得 ${gainedScore} 积分。`,
