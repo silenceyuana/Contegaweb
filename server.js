@@ -1,6 +1,6 @@
 // =================================================================
-// server.js - 最终安全部署版本
-// 特性: Express, Supabase, Public文件夹, 安全Token认证
+// server.js - 最终完整版本 (Final Complete Version)
+// 特性: Express, Supabase, 安全Token认证, 登录后提交工单, Vercel优化
 // =================================================================
 
 // --- 1. 引入依赖 ---
@@ -8,7 +8,6 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
-const mime = require('mime-types');
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -38,7 +37,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 // --- 5. 安全中间件 (Token 验证) ---
-// 这个中间件将用于保护所有需要管理员权限的API路由
+// 这个中间件将用于保护所有需要登录权限的API路由 (包括玩家和管理员)
 const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // 格式: "Bearer TOKEN"
@@ -69,6 +68,8 @@ app.get('/', (req, res) => {
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
 });
+
+
 // --- 7. 公共 API 路由 ---
 // 这些API不需要登录即可访问
 
@@ -90,52 +91,11 @@ app.get('/api/commands', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// 提交联系消息 (工单)
-app.post('/api/contact', async (req, res) => {
-    const { player_name, email, message } = req.body;
-    try {
-        const { data, error } = await supabase.from('contact_messages').insert([{ player_name, email, message }]).select();
-        if (error) throw error;
-        res.status(201).json({ message: '消息发送成功', data: data[0] });
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
 
+// --- 8. 认证与玩家 API ---
 
-// --- 8. 认证 API ---
-// 用于处理管理员登录请求
-app.post('/api/admin/login', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ error: '用户名和密码不能为空' });
-    }
-
-    try {
-        const { data: user, error } = await supabase.from('users').select('id, username, password_hash').eq('username', username).single();
-        if (error || !user) {
-            return res.status(401).json({ error: '用户名或密码错误' });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password_hash);
-        if (!isMatch) {
-            return res.status(401).json({ error: '用户名或密码错误' });
-        }
-
-        const payload = { id: user.id, username: user.username };
-        const token = jwt.sign(payload, jwtSecret, { expiresIn: '8h' }); // Token 有效期8小时
-
-        res.json({ message: '登录成功', token: token });
-    } catch (err) {
-        console.error('登录时发生服务器错误:', err);
-        res.status(500).json({ error: '服务器内部错误' });
-    }
-});
-// =================================================================
-// server.js - 在 --- 8. 认证 API --- 部分的末尾添加以下代码
-// =================================================================
-
-// --- 玩家注册 API ---
+// 玩家注册 API
 app.post('/api/register', async (req, res) => {
-    console.log('收到 /api/register 请求。请求体 (req.body) 是:', req.body);
     const { player_name, email, password } = req.body;
 
     // 1. 验证输入
@@ -172,10 +132,8 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-
-// --- 玩家登录 API ---
+// 玩家登录 API
 app.post('/api/login', async (req, res) => {
-    // 'identifier' 可以是玩家名或邮箱
     const { identifier, password } = req.body;
 
     if (!identifier || !password) {
@@ -191,7 +149,6 @@ app.post('/api/login', async (req, res) => {
             .single();
 
         if (error || !player) {
-            // 为安全起见，不明确指出是用户名还是密码错误
             return res.status(401).json({ error: '凭据无效' });
         }
 
@@ -205,15 +162,15 @@ app.post('/api/login', async (req, res) => {
         const payload = { id: player.id, player_name: player.player_name };
         const token = jwt.sign(payload, jwtSecret, { expiresIn: '1d' }); // Token 有效期1天
 
-        res.json({ 
-    message: '登录成功', 
-    token: token,
-    // 在这里添加 user 对象
-    user: {
-        id: player.id,
-        username: player.player_name 
-    }
-});
+        // **【重要修改】**: 返回 token 的同时，也返回 user 信息
+        res.json({
+            message: '登录成功',
+            token: token,
+            user: {
+                id: player.id,
+                username: player.player_name
+            }
+        });
 
     } catch (err) {
         console.error('登录时发生服务器错误:', err);
@@ -221,8 +178,59 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// 管理员登录 API
+app.post('/api/admin/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ error: '用户名和密码不能为空' });
+    }
 
-// --- 9. 受保护的管理员 API 路由 ---
+    try {
+        const { data: user, error } = await supabase.from('users').select('id, username, password_hash').eq('username', username).single();
+        if (error || !user) {
+            return res.status(401).json({ error: '用户名或密码错误' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (!isMatch) {
+            return res.status(401).json({ error: '用户名或密码错误' });
+        }
+
+        const payload = { id: user.id, username: user.username, isAdmin: true }; // 可以加一个 isAdmin 标志
+        const token = jwt.sign(payload, jwtSecret, { expiresIn: '8h' }); // Token 有效期8小时
+
+        res.json({ message: '登录成功', token: token });
+    } catch (err) {
+        console.error('管理员登录时发生服务器错误:', err);
+        res.status(500).json({ error: '服务器内部错误' });
+    }
+});
+
+
+// --- 9. 受保护的 API 路由 (需要登录) ---
+
+// 提交联系消息 (工单) - **【重要修改】**
+// 添加了 verifyToken 中间件，现在必须登录才能提交
+app.post('/api/contact', verifyToken, async (req, res) => {
+    const { message } = req.body; // 只从请求体获取消息
+    const { player_name } = req.user; // 从Token解码出的用户信息中获取玩家名
+
+    if (!message) {
+        return res.status(400).json({ error: '消息内容不能为空' });
+    }
+    
+    try {
+        // 使用从Token获取的 player_name
+        const { data, error } = await supabase.from('contact_messages').insert([{ player_name, message }]).select();
+        if (error) throw error;
+        res.status(201).json({ message: '消息发送成功', data: data[0] });
+    } catch (error) { 
+        res.status(500).json({ error: error.message }); 
+    }
+});
+
+
+// --- 10. 受保护的管理员 API 路由 (需要管理员登录) ---
 // 在每个需要管理员权限的 API 前面，加上 verifyToken 中间件进行保护
 
 // 获取所有联系消息 (工单)
@@ -264,7 +272,7 @@ app.delete('/api/admin/messages/:id', verifyToken, async (req, res) => {
 });
 
 
-// --- 10. 启动与导出 ---
+// --- 11. 启动与导出 ---
 // 仅在本地开发环境 (非 Vercel 环境) 启动服务器
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {

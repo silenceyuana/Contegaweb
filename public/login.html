@@ -88,6 +88,8 @@
             submitButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> 登录';
         }
     });
+    localStorage.setItem('playerAuthToken', result.token);
+    localStorage.setItem('playerInfo', JSON.stringify(result.user));
 </script>
 
 </body>
