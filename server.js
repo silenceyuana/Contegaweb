@@ -59,12 +59,16 @@ const verifyToken = (req, res, next) => {
 
 
 // --- 6. 页面路由 ---
+
+// 当用户访问根目录时，发送 public 文件夹内的 index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // 当用户访问 /admin 时，发送 public 文件夹内的 admin-login.html
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
 });
-
-
 // --- 7. 公共 API 路由 ---
 // 这些API不需要登录即可访问
 

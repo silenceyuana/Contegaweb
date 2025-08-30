@@ -147,3 +147,27 @@ async function handleContactSubmit(e) {
         submitButton.textContent = '发送消息';
     }
 }
+// =================================================================
+// 新增：页面元素滚动进入视图时的动画触发逻辑
+// =================================================================
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('animate');
+        }
+    });
+}, {
+    threshold: 0.1 // 元素进入可视区域10%时触发
+});
+
+// 选择所有需要应用动画的元素
+const animatedElements = document.querySelectorAll(
+    '.hero-content h1, .hero-subtitle, .cta-button, .server-status-container, ' +
+    '.about h2, .about-text, .about-image, ' +
+    '.rules-preview h2, .rule-card, ' +
+    '.commands h2, .command-category, .command-item, ' +
+    '.contact h2, .contact-form'
+);
+
+// 监听这些元素
+animatedElements.forEach(el => observer.observe(el));
