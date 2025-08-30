@@ -13,7 +13,7 @@ body {
     font-family: 'Arial', 'Microsoft YaHei', sans-serif;
     line-height: 1.6;
     color: #e0e0e0;
-    /* 【已修正】: 修正了图片路径 */
+    /* 【已修正】: 修正了图片路径，确保服务器能找到图片 */
     background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('images/3.jpg') center/cover no-repeat fixed;
     min-height: 100vh;
 }
@@ -221,7 +221,7 @@ section h2 {
 .contact { background: rgba(33, 47, 69, 0.8); }
 
 .rules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-bottom: 3rem; }
-.rule-card { background: rgba(0, 0, 0, 0.2); padding: 2rem; border-radius: 15px; text-align: center; border: 1px solid rgba(76, 175, 80, 0.3); transition: transform 0.3s ease; }
+.rule-card { background: rgba(0, 0, 0, 0.2); padding: 2rem; border-radius: 15px; text-align: center; border: 1px solid rgba(76, 175, 80, 0.3); transition: transform 0.3s ease; position: relative; }
 .rule-card:hover { transform: translateY(-5px); }
 .rule-icon { font-size: 3rem; color: #4CAF50; margin-bottom: 1rem; }
 .rule-card h3 { font-size: 1.5rem; margin-bottom: 1rem; color: #4CAF50; }
@@ -232,7 +232,7 @@ section h2 {
 .cta-button.secondary:hover { background: #4CAF50; color: white; }
 
 .commands-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
-.command-category { background: rgba(0, 0, 0, 0.2); padding: 2rem; border-radius: 10px; border: 1px solid rgba(76, 175, 80, 0.3); }
+.command-category { background: rgba(0, 0, 0, 0.2); padding: 2rem; border-radius: 10px; border: 1px solid rgba(76, 175, 80, 0.3); position: relative; }
 .command-category h3 { color: #4CAF50; margin-bottom: 1.5rem; font-size: 1.3rem; display: flex; align-items: center; gap: 0.5rem; }
 .command-list { display: flex; flex-direction: column; gap: 1rem; }
 .command-item { display: flex; flex-direction: column; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; transition: background 0.3s ease; }
@@ -241,9 +241,8 @@ section h2 {
 .command-item span { color: #bdc3c7; font-size: 0.9rem; }
 
 .contact-form { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
-.contact-form input, .contact-form textarea { padding: 15px; border: 2px solid rgba(76, 175, 80, 0.5); border-radius: 8px; background: rgba(0, 0, 0, 0.2); color: white; font-size: 1rem; }
-.contact-form input::placeholder, .contact-form textarea::placeholder { color: #aaa; }
-/* contact-form button 使用 .cta-button 样式 */
+.contact-form textarea { padding: 15px; border: 2px solid rgba(76, 175, 80, 0.5); border-radius: 8px; background: rgba(0, 0, 0, 0.2); color: white; font-size: 1rem; }
+.contact-form textarea::placeholder { color: #aaa; }
 
 /* --- 页脚 --- */
 .footer { background: #151c2a; padding: 2rem 0; text-align: center; border-top: 2px solid #4CAF50; }
@@ -259,7 +258,6 @@ section h2 {
 .form-group label { display: block; margin-bottom: 0.5rem; color: #bdc3c7; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
 .login-form input { width: 100%; padding: 12px 15px; background: rgba(0, 0, 0, 0.2); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; font-size: 1rem; transition: all 0.3s ease; }
 .login-form input:focus { outline: none; border-color: #4CAF50; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
-.login-btn { width: 100%; /* login-btn 使用 .cta-button 样式 */ }
 .message { font-weight: bold; padding: 10px; border-radius: 5px; text-align: center; }
 .login-container p { text-align: center; margin-top: 1.5rem; color: #bdc3c7; }
 .login-container p a:hover { text-decoration: underline; }
@@ -271,7 +269,7 @@ section h2 {
 .logout-btn-small:hover { color: #ff6b6b; }
 
 /* --- 动画效果 --- */
-.hero-content h1, .hero-subtitle, .cta-button, .server-status-container, 
+.hero-content h1, .hero-subtitle, .server-status-container, 
 .about h2, .about-text, .about-image, 
 .rules-preview h2, .rule-card, 
 .commands h2, .command-category, 
@@ -279,7 +277,10 @@ section h2 {
     opacity: 0;
     transition: opacity 0.8s ease-out, transform 0.8s ease-out;
 }
-
+.cta-button { /* 让按钮也有动画效果 */
+    opacity: 0;
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
 .hero-content h1 { transform: translateX(-30px); }
 .hero-subtitle { transform: translateY(-20px); transition-delay: 0.2s; }
 .server-status-container { transform: scale(0.8); transition-delay: 0.4s; }
@@ -288,102 +289,97 @@ section h2 {
 .about-text { transform: translateX(-30px); }
 .about-image { transform: translateX(30px); }
 .rule-card, .command-category, .contact-form { transform: translateY(30px); }
-
-/* 动画触发后的样式 */
 .hero-content h1.animate, .hero-subtitle.animate, .cta-button.animate, .server-status-container.animate,
 .about h2.animate, .about-text.animate, .about-image.animate,
 .rules-preview h2.animate, .rule-card.animate,
 .commands h2.animate, .command-category.animate,
 .contact h2.animate, .contact-form.animate {
     opacity: 1;
-    transform: none; /* 恢复到原始位置 */
+    transform: none;
 }
+
+/* --- 自定义表单按钮样式 --- */
+.login-form .cta-button, .contact-form .cta-button {
+    background: #ffffff;
+    color: #4CAF50;
+    border: 2px solid #4CAF50;
+    width: 100%;
+    padding-top: 13px;
+    padding-bottom: 13px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-shadow: none;
+    transition: all 0.3s ease;
+}
+.login-form .cta-button:hover, .contact-form .cta-button:hover {
+    background-color: #f7fff7;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+.login-form .cta-button:active, .contact-form .cta-button:active {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+/* --- 按钮禁用状态美化 --- */
+.cta-button:disabled {
+    background: linear-gradient(45deg, #5a6e5a, #687a69);
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+.login-form .cta-button:disabled, .contact-form .cta-button:disabled {
+    background: #e0e0e0;
+    color: #9e9e9e;
+    border-color: #bdbdbd;
+}
+
+/* --- 管理员编辑功能样式 --- */
+.admin-only-btn { background-color: #2ecc71; color: white; border: none; border-radius: 5px; padding: 8px 15px; font-size: 0.9rem; cursor: pointer; margin-left: 1rem; transition: background-color 0.3s; }
+.admin-only-btn:hover { background-color: #27ae60; }
+.admin-controls { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); border-radius: 5px; padding: 5px; opacity: 0; transition: opacity 0.3s ease; }
+.rule-card:hover .admin-controls, .command-category:hover .admin-controls { opacity: 1; }
+body.admin-view .admin-controls { display: flex; } /* 只有管理员登录时才显示 */
+body:not(.admin-view) .admin-controls { display: none; } /* 确保非管理员绝对看不到 */
+
+.admin-controls button { background: none; border: none; color: white; font-size: 1rem; cursor: pointer; padding: 5px 8px; transition: color 0.3s; }
+.admin-controls .edit-btn:hover { color: #3498db; }
+.admin-controls .delete-btn:hover { color: #e74c3c; }
+
+/* --- 编辑模态框 (弹窗) 样式 --- */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+.modal-content { background-color: #1b263b; padding: 2rem; border-radius: 10px; width: 90%; max-width: 500px; border: 1px solid #4CAF50; }
+#modal-title { color: #4CAF50; margin-bottom: 1.5rem; }
+#modal-form-fields .form-group { margin-bottom: 1rem; }
+#modal-form-fields label { display: block; margin-bottom: 0.5rem; }
+#modal-form-fields input, #modal-form-fields textarea { width: 100%; padding: 10px; background-color: rgba(0,0,0,0.3); border: 1px solid #444; border-radius: 5px; color: white; }
+.modal-actions { margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem; }
 
 /* =================================================================
 // 响应式设计: 媒体查询模块
-// 当屏幕宽度小于等于 768px 时，应用以下样式
 // ================================================================= */
 @media (max-width: 768px) {
-    
-    /* --- 基础调整 --- */
-    section {
-        padding: 60px 0;
-    }
-    section h2 {
-        font-size: 2rem;
-    }
-
-    /* --- 导航栏响应式 --- */
-    .nav-menu {
-        display: none;
-        flex-direction: column;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        background: rgba(27, 38, 59, 0.98);
-        padding: 1rem 0;
-        gap: 0;
-    }
-    .nav-menu.active {
-        display: flex;
-    }
-    .nav-item {
-        width: 100%;
-        text-align: center;
-    }
-    .nav-link {
-        display: block;
-        padding: 1rem 0;
-    }
-    .nav-link::after {
-        display: none; /* 在移动端菜单中隐藏下划线动画 */
-    }
-    .menu-toggle {
-        display: flex;
-    }
+    section { padding: 60px 0; }
+    section h2 { font-size: 2rem; }
+    .nav-menu { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; background: rgba(27, 38, 59, 0.98); padding: 1rem 0; gap: 0; }
+    .nav-menu.active { display: flex; }
+    .nav-item { width: 100%; text-align: center; }
+    .nav-link { display: block; padding: 1rem 0; }
+    .nav-link::after { display: none; }
+    .menu-toggle { display: flex; }
     .menu-toggle.active .bar:nth-child(1) { transform: rotate(-45deg) translate(-5px, 6px); }
     .menu-toggle.active .bar:nth-child(2) { opacity: 0; }
     .menu-toggle.active .bar:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
-
-    /* --- 英雄区域响应式 --- */
-    .hero-content h1 {
-        font-size: 2.5rem;
-    }
-    .hero-content .hero-subtitle {
-        font-size: 1.2rem;
-    }
-    .server-status-container {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    /* --- 关于区域响应式 --- */
-    .about-content {
-        grid-template-columns: 1fr;
-        text-align: center;
-    }
-    .about-text {
-        order: 2;
-    }
-    .about-image {
-        order: 1;
-        font-size: 8rem;
-    }
-    .specs-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    /* --- 规则、指令区域响应式 --- */
-    .rules-grid,
-    .commands-content {
-        grid-template-columns: 1fr;
-    }
-    
-    /* --- 登录/注册表单响应式 --- */
-    .login-container {
-        padding: 2rem 1.5rem;
-    }
+    .hero-content h1 { font-size: 2.5rem; }
+    .hero-content .hero-subtitle { font-size: 1.2rem; }
+    .server-status-container { flex-direction: column; gap: 10px; }
+    .about-content { grid-template-columns: 1fr; text-align: center; }
+    .about-text { order: 2; }
+    .about-image { order: 1; font-size: 8rem; }
+    .specs-grid { grid-template-columns: repeat(2, 1fr); }
+    .rules-grid, .commands-content { grid-template-columns: 1fr; }
+    .login-container { padding: 2rem 1.5rem; }
 }
 /* =================================================================
 // 自定义表单按钮样式 (Custom Form Button Style)
@@ -399,6 +395,9 @@ section h2 {
     color: #4CAF50;                       /* 绿色文字 */
     border: 2px solid #4CAF50;           /* 2像素宽的绿色窄边框 */
     
+    /* --- 【新增】圆角样式 --- */
+    border-radius: 50px;                 /* 让按钮变成圆角胶囊形状 */
+    
     /* --- 尺寸匹配 (与输入框等宽同高) --- */
     width: 100%;                         /* 宽度与父容器(表单)一致 */
     padding-top: 13px;                   /* 调整垂直内边距以匹配输入框高度 */
@@ -409,130 +408,4 @@ section h2 {
     font-size: 1.1rem;                   /* 调整字体大小 */
     text-shadow: none;                   /* 移除可能存在的文字阴影 */
     transition: all 0.3s ease;           /* 平滑的过渡动画 */
-}
-
-/* --- 悬停效果 (Hover Effect) --- */
-.login-form .cta-button:hover,
-.contact-form .cta-button:hover,
-.login-form .minecraft-btn:hover,
-.contact-form .minecraft-btn:hover {
-    background-color: #f7fff7;             /* 悬停时背景变为极浅的绿色 */
-    transform: translateY(-3px);           /* 向上浮动效果 (同“立即加入”) */
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4); /* 绿色阴影 (同“立即加入”) */
-}
-
-/* --- 点击效果 (Active Effect) --- */
-.login-form .cta-button:active,
-.contact-form .cta-button:active,
-.login-form .minecraft-btn:active,
-.contact-form .minecraft-btn:active {
-    transform: translateY(-1px);           /* 点击时轻微下沉 */
-    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3); /* 阴影变小 */
-}
-
-/* =================================================================
-// 管理员编辑功能样式 (Admin Edit Feature Styles)
-// ================================================================= */
-
-/* --- 管理员专属按钮 --- */
-.admin-only-btn {
-    background-color: #2ecc71;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 8px 15px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    margin-left: 1rem;
-    transition: background-color 0.3s;
-}
-.admin-only-btn:hover {
-    background-color: #27ae60;
-}
-
-/* --- 内容条目上的编辑/删除按钮组 --- */
-.admin-controls {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: rgba(0,0,0,0.5);
-    border-radius: 5px;
-    padding: 5px;
-    display: none; /* 默认对普通用户隐藏 */
-}
-/* 使父容器相对定位，以便按钮定位 */
-.rule-card, .command-category {
-    position: relative;
-}
-.rule-card:hover .admin-controls,
-.command-category:hover .admin-controls {
-    display: flex; /* 仅对管理员，在鼠标悬停时显示 */
-}
-
-.admin-controls button {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 5px 8px;
-    transition: color 0.3s;
-}
-.admin-controls .edit-btn:hover { color: #3498db; }
-.admin-controls .delete-btn:hover { color: #e74c3c; }
-
-
-/* --- 编辑模态框 (弹窗) 样式 --- */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(5px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-}
-
-.modal-content {
-    background-color: #1b263b;
-    padding: 2rem;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 500px;
-    border: 1px solid #4CAF50;
-}
-
-#modal-title {
-    color: #4CAF50;
-    margin-bottom: 1.5rem;
-}
-
-#modal-form-fields .form-group {
-    margin-bottom: 1rem;
-}
-
-#modal-form-fields label {
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-#modal-form-fields input,
-#modal-form-fields textarea {
-    width: 100%;
-    padding: 10px;
-    background-color: rgba(0,0,0,0.3);
-    border: 1px solid #444;
-    border-radius: 5px;
-    color: white;
-}
-
-.modal-actions {
-    margin-top: 1.5rem;
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
 }
