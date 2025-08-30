@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>赞助名单 - 筑界物语服务器</title>
+    <link rel="icon" type="image/x-icon" href="/icon.ico">
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* 针对此页面的特定样式微调 */
         .sponsors-page {
             padding: 120px 0 60px;
             min-height: 100vh;
@@ -39,53 +41,12 @@
             backdrop-filter: blur(10px);
             border: 2px solid rgba(255, 215, 0, 0.3);
             text-align: center;
-            position: relative;
         }
         
         .donation-section h2 {
             color: #ffd700;
             margin-bottom: 1rem;
             font-size: 1.5rem;
-        }
-        
-        .qr-code {
-            max-width: 150px;
-            margin: 0 auto 1rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-            border: 2px solid #ffd700;
-        }
-        
-        .qr-code img {
-            width: 100%;
-            height: auto;
-            border-radius: 6px;
-            display: block;
-        }
-        
-        .donation-info {
-            color: #bdc3c7;
-            margin-bottom: 0.5rem;
-            line-height: 1.5;
-            font-size: 0.9rem;
-        }
-        
-        .qr-position-top-right {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            max-width: 120px;
-            border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-            border: 2px solid #ffd700;
-            z-index: 10;
-        }
-        
-        .qr-position-top-right img {
-            width: 100%;
-            height: auto;
-            border-radius: 6px;
-            display: block;
         }
         
         .sponsors-list {
@@ -99,7 +60,7 @@
         
         .sponsors-header-row {
             display: grid;
-            grid-template-columns: 60px 1fr 100px;
+            grid-template-columns: 60px 1fr 100px; /* 默认三列 */
             gap: 20px;
             padding: 15px;
             font-weight: bold;
@@ -111,7 +72,7 @@
         
         .sponsor-item {
             display: grid;
-            grid-template-columns: 60px 1fr 100px;
+            grid-template-columns: 60px 1fr 100px; /* 默认三列 */
             gap: 20px;
             padding: 15px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -119,157 +80,39 @@
             transition: background-color 0.3s ease;
         }
         
-        .sponsor-item:last-child {
-            border-bottom: none;
+        .sponsor-item:last-child { border-bottom: none; }
+        .sponsor-item:hover { background: rgba(255, 255, 255, 0.1); }
+        .sponsor-number { color: #ffd700; font-weight: bold; text-align: center; }
+        .sponsor-name { color: #fff; font-weight: 500; }
+        .sponsor-amount { color: #2ecc71; font-weight: bold; text-align: right; }
+
+        /* 管理员视图下的特殊布局 */
+        body.admin-view .sponsors-header-row,
+        body.admin-view .sponsor-item {
+            grid-template-columns: 60px 1fr 100px 100px; /* 管理员视图下变为四列 */
         }
         
-        .sponsor-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .sponsor-number {
-            color: #ffd700;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        .sponsor-name {
-            color: #fff;
-            font-weight: 500;
-        }
-        
-        .sponsor-amount {
-            color: #2ecc71;
-            font-weight: bold;
-            text-align: right;
-        }
-        
-        .admin-panel {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(46, 204, 113, 0.3);
-        }
-        
-        .admin-panel h3 {
-            color: #2ecc71;
-            margin-bottom: 1.5rem;
-            font-size: 1.5rem;
-        }
-        
-        .admin-form {
-            display: grid;
-            grid-template-columns: 1fr 1fr auto;
-            gap: 15px;
-            align-items: end;
-        }
-        
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .form-group label {
-            color: #bdc3c7;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-        }
-        
-        .form-group input {
-            padding: 10px 15px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            font-size: 1rem;
-        }
-        
-        .admin-btn {
-            background: #2ecc71;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.3s ease;
-        }
-        
-        .admin-btn:hover {
-            background: #27ae60;
-        }
-        
-        .delete-btn {
-            background: #e74c3c;
-            padding: 6px 12px;
-            font-size: 0.9rem;
-            margin-left: 10px;
-        }
-        
-        .delete-btn:hover {
-            background: #c0392b;
-        }
-        
-        .login-prompt {
-            text-align: center;
-            color: #bdc3c7;
-            margin: 2rem 0;
-        }
-        
-        .login-link {
-            color: #3498db;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        
-        .login-link:hover {
-            text-decoration: underline;
-        }
-        
-        .admin-actions {
-            text-align: center;
-            margin-top: 2rem;
-        }
-        
-        .logout-btn {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.3s ease;
-        }
-        
-        .logout-btn:hover {
-            background: #c0392b;
-        }
-        
-        .back-to-home {
-            text-align: center;
-            margin-top: 3rem;
-        }
-        
-        .back-to-home a {
-            color: #ffd700;
-            text-decoration: none;
-            font-size: 1.1rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: color 0.3s ease;
-        }
-        
-        .back-to-home a:hover {
-            color: #fff;
-        }
-        
-        .admin-action {
-            display: none;
-        }
+        .admin-action { text-align: right; }
+
+        .admin-panel { background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; backdrop-filter: blur(10px); border: 2px solid rgba(46, 204, 113, 0.3); }
+        .admin-panel h3 { color: #2ecc71; margin-bottom: 1.5rem; font-size: 1.5rem; }
+        .admin-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: end; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { color: #bdc3c7; margin-bottom: 8px; font-size: 0.9rem; }
+        .form-group input { padding: 10px 15px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: #fff; font-size: 1rem; }
+        .admin-btn { background: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: background-color 0.3s ease; }
+        .admin-btn:hover { background: #27ae60; }
+        .delete-btn { background: #e74c3c; padding: 6px 12px; font-size: 0.9rem; margin-left: 10px; }
+        .delete-btn:hover { background: #c0392b; }
+        .login-prompt { text-align: center; color: #bdc3c7; margin: 2rem 0; }
+        .login-link { color: #3498db; text-decoration: none; font-weight: 500; }
+        .login-link:hover { text-decoration: underline; }
+        .admin-actions { text-align: center; margin-top: 2rem; }
+        .logout-btn { background: #e74c3c; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: background-color 0.3s ease; }
+        .logout-btn:hover { background: #c0392b; }
+        .back-to-home { text-align: center; margin-top: 3rem; }
+        .back-to-home a { color: #ffd700; text-decoration: none; font-size: 1.1rem; display: inline-flex; align-items: center; gap: 0.5rem; transition: color 0.3s ease; }
+        .back-to-home a:hover { color: #fff; }
     </style>
 </head>
 <body>
@@ -284,12 +127,8 @@
                     </a>
                 </div>
                 <ul class="nav-menu">
-                    <li class="nav-item">
-                        <a href="index.html" class="nav-link">返回首页</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="admin-login.html" class="nav-link">管理员登录</a>
-                    </li>
+                    <li class="nav-item"><a href="index.html" class="nav-link">返回首页</a></li>
+                    <li class="nav-item"><a href="admin-login.html" class="nav-link">管理员登录</a></li>
                 </ul>
             </div>
         </nav>
@@ -300,19 +139,7 @@
         <div class="container">
             <div class="sponsors-header">
                 <h1><i class="fas fa-hand-holding-heart"></i> 赞助名单</h1>
-                <p>感谢所有赞助者和宣传服务器的朋友们！你们的支持让服务器变得更好</p>
-            </div>
-
-            <!-- 捐款二维码区域 -->
-            <div class="donation-section">
-                <h2><i class="fas fa-qrcode"></i> 赞助收款码</h2>
-                <div class="qr-position-top-right">
-                    <img src="images/2.jpg" alt="赞助收款二维码">
-                </div>
-                <div class="donation-info">
-                    <p>扫描二维码进行赞助，支持服务器运营和发展</p>
-                    <p>所有赞助将用于服务器维护、升级和活动举办</p>
-                </div>
+                <p>感谢所有赞助者！你们的支持是服务器前进的最大动力！</p>
             </div>
 
             <!-- 管理员面板（仅登录后显示） -->
@@ -325,7 +152,7 @@
                     </div>
                     <div class="form-group">
                         <label for="sponsorAmount">赞助金额</label>
-                        <input type="text" id="sponsorAmount" required placeholder="如：100R、50R">
+                        <input type="text" id="sponsorAmount" required placeholder="如：100R">
                     </div>
                     <button type="submit" class="admin-btn">添加赞助者</button>
                 </form>
@@ -333,25 +160,28 @@
 
             <!-- 赞助者列表 -->
             <div class="sponsors-list">
-                <div class="sponsors-header-row">
+                <div class="sponsors-header-row" id="sponsors-header-row">
                     <div>#</div>
-                    <div>赞助者或宣传服务器者名单</div>
-                    <div>金额</div>
+                    <div>赞助者名单</div>
+                    <div style="text-align:right;">金额</div>
+                    <!-- 管理员操作列的表头将由JS动态添加 -->
                 </div>
                 <div id="sponsorsContainer">
-                    <!-- 赞助者列表将通过JavaScript动态生成 -->
+                    <div class="sponsor-item" style="grid-column: 1 / -1; text-align: center;">
+                        <p>正在加载赞助者名单...</p>
+                    </div>
                 </div>
             </div>
 
             <!-- 登录提示 -->
             <div id="loginPrompt" class="login-prompt">
-                <p>管理员可 <a href="admin-login.html" class="login-link">登录</a> 管理赞助名单</p>
+                <p>管理员可 <a href="admin-login.html" class="login-link">登录</a> 以管理赞助名单</p>
             </div>
 
             <!-- 管理员操作区域 -->
             <div id="adminActions" class="admin-actions" style="display: none;">
                 <p style="color: #bdc3c7; margin-bottom: 15px;">
-                    登录管理员: <strong style="color: #2ecc71;" id="adminName"></strong>
+                    已登录为管理员
                 </p>
                 <button class="logout-btn" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> 安全退出
@@ -367,162 +197,147 @@
         </div>
     </main>
 
+   
     <script>
-        // 检查登录状态
-        function checkLogin() {
-            return localStorage.getItem('adminLoggedIn') === 'true';
-        }
+        const adminToken = localStorage.getItem('adminAuthToken');
+        const isAdmin = !!adminToken;
 
-        // 显示/隐藏管理员功能
+        document.addEventListener('DOMContentLoaded', function() {
+            if (isAdmin) {
+                document.body.classList.add('admin-view');
+            }
+            renderSponsors();
+            toggleAdminFeatures();
+            
+            const addSponsorForm = document.getElementById('addSponsorForm');
+            if (addSponsorForm) {
+                addSponsorForm.addEventListener('submit', handleAddSponsor);
+            }
+        });
+
         function toggleAdminFeatures() {
-            const isLoggedIn = checkLogin();
             const adminPanel = document.getElementById('adminPanel');
             const adminActions = document.getElementById('adminActions');
             const loginPrompt = document.getElementById('loginPrompt');
-            const adminActionsElements = document.querySelectorAll('.admin-action');
+            const headerRow = document.getElementById('sponsors-header-row');
             
-            if (isLoggedIn) {
-                adminPanel.style.display = 'block';
-                adminActions.style.display = 'block';
-                loginPrompt.style.display = 'none';
-                adminActionsElements.forEach(el => el.style.display = 'grid');
-                
-                const encryptedUsername = localStorage.getItem('adminUsername');
-                if (encryptedUsername) {
-                    try {
-                        const username = atob(encryptedUsername);
-                        document.getElementById('adminName').textContent = username;
-                    } catch (e) {
-                        document.getElementById('adminName').textContent = '管理员';
-                    }
+            if (isAdmin) {
+                if (adminPanel) adminPanel.style.display = 'block';
+                if (adminActions) adminActions.style.display = 'block';
+                if (loginPrompt) loginPrompt.style.display = 'none';
+
+                // 动态添加“操作”表头
+                if (headerRow && !headerRow.querySelector('.admin-header')) {
+                    const adminHeader = document.createElement('div');
+                    adminHeader.className = 'admin-header';
+                    adminHeader.textContent = '操作';
+                    adminHeader.style.textAlign = 'right';
+                    headerRow.appendChild(adminHeader);
                 }
             } else {
-                adminPanel.style.display = 'none';
-                adminActions.style.display = 'none';
-                loginPrompt.style.display = 'block';
-                adminActionsElements.forEach(el => el.style.display = 'none');
+                if (adminPanel) adminPanel.style.display = 'none';
+                if (adminActions) adminActions.style.display = 'none';
+                if (loginPrompt) loginPrompt.style.display = 'block';
             }
         }
 
-        // 从本地存储加载赞助数据
-        function loadSponsors() {
-            const sponsors = JSON.parse(localStorage.getItem('serverSponsors')) || [
-                { id: 1, name: 'CREGlacier', amount: '100R' },
-                { id: 2, name: 'AyanShe1p', amount: '60R' },
-                { id: 3, name: 'zxc', amount: '50R' },
-                { id: 4, name: 'nekoshirow喵', amount: '20R' },
-                { id: 5, name: 'Mrs_1in', amount: '20R' },
-                { id: 6, name: 'YouzhouTianbiao_', amount: '10R' },
-                { id: 7, name: 'yurayuralily', amount: '10R' },
-                { id: 8, name: 'Lucky', amount: '10R' },
-                { id: 9, name: 'stabsps', amount: '10R' },
-                { id: 10, name: 'cxc', amount: '5R' },
-                { id: 11, name: 'heartrain', amount: '5R' },
-                { id: 12, name: 'wen_kesi', amount: '3R' },
-                { id: 13, name: '樱糖', amount: '2R' },
-                { id: 14, name: 'chalk_lol', amount: '1R' },
-                { id: 15, name: 'bilibilihcdwl', amount: '1R' }
-            ];
-            return sponsors;
-        }
+        async function renderSponsors() {
+            const container = document.getElementById('sponsorsContainer');
+            if (!container) return;
 
-        // 保存赞助数据到本地存储
-        function saveSponsors(sponsors) {
-            localStorage.setItem('serverSponsors', JSON.stringify(sponsors));
-        }
+            try {
+                const response = await fetch('/api/sponsors');
+                if (!response.ok) throw new Error('获取数据失败');
+                const sponsors = await response.json();
 
-        // 渲染赞助者列表
-        function renderSponsors() {
-            const sponsors = loadSponsors();
-            const sponsorsContainer = document.getElementById('sponsorsContainer');
-            
-            // 清空现有内容
-            sponsorsContainer.innerHTML = '';
-            
-            // 添加赞助者条目
-            sponsors.forEach((sponsor, index) => {
-                const item = document.createElement('div');
-                item.className = 'sponsor-item';
-                item.setAttribute('data-id', sponsor.id);
-                item.innerHTML = `
-                    <div class="sponsor-number">${index + 1}</div>
-                    <div class="sponsor-name">${sponsor.name}</div>
-                    <div class="sponsor-amount">${sponsor.amount}</div>
-                    <div class="admin-action" style="display: none;">
-                        <button class="admin-btn delete-btn" onclick="removeSponsor(${sponsor.id})">删除</button>
-                    </div>
-                `;
-                sponsorsContainer.appendChild(item);
-            });
-            
-            // 更新管理员操作显示
-            toggleAdminFeatures();
-        }
+                container.innerHTML = '';
 
-        // 添加赞助者
-        document.getElementById('addSponsorForm').addEventListener('submit', function(e) {
+                if (sponsors.length === 0) {
+                    const noSponsorsItem = document.createElement('div');
+                    noSponsorsItem.className = 'sponsor-item';
+                    noSponsorsItem.innerHTML = `<div style="grid-column: 1 / -1; text-align: center;">暂无赞助记录</div>`;
+                    container.appendChild(noSponsorsItem);
+                    return;
+                }
+                
+                sponsors.forEach((sponsor, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'sponsor-item';
+                    item.setAttribute('data-id', sponsor.id);
+                    
+                    let itemHTML = `
+                        <div class="sponsor-number">${index + 1}</div>
+                        <div class="sponsor-name">${escapeHTML(sponsor.name)}</div>
+                        <div class="sponsor-amount">${escapeHTML(sponsor.amount)}</div>
+                    `;
+
+                    if (isAdmin) {
+                        itemHTML += `
+                            <div class="admin-action">
+                                <button class="admin-btn delete-btn" onclick="removeSponsor(${sponsor.id})">删除</button>
+                            </div>
+                        `;
+                    }
+                    item.innerHTML = itemHTML;
+                    container.appendChild(item);
+                });
+
+            } catch (error) {
+                console.error('渲染赞助列表错误:', error);
+                container.innerHTML = `<div class="sponsor-item"><p style="grid-column: 1 / -1; text-align: center; color: red;">加载失败: ${error.message}</p></div>`;
+            }
+        }
+        
+        async function handleAddSponsor(e) {
             e.preventDefault();
-            
-            if (!checkLogin()) {
-                alert('请先登录管理员账号！');
-                return;
-            }
+            if (!isAdmin) return alert('您没有权限执行此操作！');
             
             const sponsorName = document.getElementById('sponsorName').value.trim();
             const sponsorAmount = document.getElementById('sponsorAmount').value.trim();
-            
-            if (!sponsorName || !sponsorAmount) {
-                alert('请填写所有必填字段！');
-                return;
-            }
-            
-            const sponsors = loadSponsors();
-            const newId = sponsors.length > 0 ? Math.max(...sponsors.map(s => s.id)) + 1 : 1;
-            
-            const newSponsor = {
-                id: newId,
-                name: sponsorName,
-                amount: sponsorAmount
-            };
-            
-            sponsors.push(newSponsor);
-            saveSponsors(sponsors);
-            renderSponsors();
-            
-            alert(`已成功添加赞助者: ${sponsorName}`);
-            this.reset();
-        });
+            if (!sponsorName || !sponsorAmount) return alert('请填写所有字段！');
 
-        // 移除赞助者
-        function removeSponsor(id) {
-            if (!checkLogin()) {
-                alert('请先登录管理员账号！');
-                return;
-            }
-            
-            if (confirm('确定要移除这个赞助者记录吗？')) {
-                const sponsors = loadSponsors();
-                const updatedSponsors = sponsors.filter(sponsor => sponsor.id !== id);
-                saveSponsors(updatedSponsors);
+            try {
+                const response = await fetch('/api/admin/sponsors', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+                    body: JSON.stringify({ name: sponsorName, amount: sponsorAmount })
+                });
+                if (!response.ok) throw new Error((await response.json()).error || '添加失败');
+                alert('添加赞助者成功！');
+                this.reset();
                 renderSponsors();
-                alert('赞助者记录已移除');
+            } catch (error) {
+                alert(`错误: ${error.message}`);
             }
         }
 
-        // 退出登录
-        function logout() {
-            localStorage.removeItem('adminLoggedIn');
-            localStorage.removeItem('adminUsername');
-            alert('已安全退出管理员账号');
-            toggleAdminFeatures();
+        async function removeSponsor(id) {
+            if (!isAdmin) return alert('您没有权限执行此操作！');
+            if (!confirm('确定要移除这条赞助记录吗？')) return;
+
+            try {
+                const response = await fetch(`/api/admin/sponsors/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if (!response.ok) throw new Error((await response.json()).error || '删除失败');
+                alert('删除成功！');
+                renderSponsors();
+            } catch (error) {
+                alert(`错误: ${error.message}`);
+            }
         }
 
-        // 页面加载时初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            // 初始渲染赞助者列表
-            renderSponsors();
-            toggleAdminFeatures();
-        });
+        function logout() {
+            localStorage.removeItem('adminAuthToken');
+            alert('已安全退出');
+            window.location.reload();
+        }
+        
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return '';
+            return str.replace(/[&<>"']/g, match => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[match]));
+        }
     </script>
 </body>
 </html>

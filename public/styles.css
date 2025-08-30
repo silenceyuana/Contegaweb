@@ -409,3 +409,14 @@ body:not(.admin-view) .admin-controls { display: none; } /* 确保非管理员�
     text-shadow: none;                   /* 移除可能存在的文字阴影 */
     transition: all 0.3s ease;           /* 平滑的过渡动画 */
 }
+
+/* styles.css (在末尾添加) */
+body.admin-view .sponsors-header-row {
+    grid-template-columns: 60px 1fr 100px 100px; /* 管理员视图下多加一列 */
+}
+body.admin-view .sponsor-item {
+    grid-template-columns: 60px 1fr 100px 100px; /* 管理员视图下多加一列 */
+}
+.admin-action {
+    text-align: right;
+}
