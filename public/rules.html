@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务器规则 - 筑界物语服务器</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .rules-page {
+            padding: 120px 0 60px;
+            min-height: 100vh;
+        }
+        
+        .rules-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .rules-header h1 {
+            font-size: 3rem;
+            color: #4CAF50;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+        
+        .rules-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .rules-category {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .rules-category h2 {
+            color: #4CAF50;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 0.5rem;
+        }
+        
+        .rule-item {
+            margin-bottom: 1.5rem;
+            padding-left: 1rem;
+            border-left: 3px solid #4CAF50;
+        }
+        
+        .rule-item h3 {
+            color: #4CAF50;
+            margin-bottom: 0.5rem;
+            font-size: 1.3rem;
+        }
+        
+        .rule-item p {
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+        
+        .consequence {
+            color: #ff6b6b;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .back-to-home {
+            text-align: center;
+            margin-top: 3rem;
+        }
+        
+        .back-to-home a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-size: 1.1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.3s ease;
+        }
+        
+        .back-to-home a:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <header>
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <a href="index.html">
+                        <i class="fas fa-cube"></i>
+                        <span>筑界物语服务器</span>
+                    </a>
+                </div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="index.html#home" class="nav-link">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="index.html#about" class="nav-link">关于服务器</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="index.html#features" class="nav-link">特色功能</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="rules.html" class="nav-link">服务器规则</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="index.html#contact" class="nav-link">联系我们</a>
+                    </li>
+                </ul>
+                <div class="menu-toggle">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 规则页面内容 -->
+    <main class="rules-page">
+        <div class="container">
+            <div class="rules-header">
+                <h1><i class="fas fa-book"></i> 服务器规则</h1>
+                <p>请仔细阅读并遵守以下规则，共同维护良好的游戏环境</p>
+            </div>
+
+            <!-- 基本行为规则 -->
+            <div class="rules-category">
+                <h2><i class="fas fa-users"></i> 基本行为准则</h2>
+                
+                <div class="rule-item">
+                    <h3>1. 尊重他人</h3>
+                    <p>禁止任何形式的辱骂、骚扰、歧视或人身攻击行为。</p>
+                    <p class="consequence">违规处罚：警告 → 禁言 → 封禁</p>
+                </div>
+                
+                <div class="rule-item">
+                    <h3>2. 文明交流</h3>
+                    <p>保持聊天频道文明，禁止刷屏、广告、发布不当内容。</p>
+                    <p class="consequence">违规处罚：禁言 → 封禁</p>
+                </div>
+                
+                <div class="rule-item">
+                    <h3>3. 禁止冒充</h3>
+                    <p>禁止冒充管理员或其他玩家。</p>
+                    <p class="consequence">违规处罚：直接封禁</p>
+                </div>
+            </div>
+
+            <!-- 游戏行为规则 -->
+            <div class="rules-category">
+                <h2><i class="fas fa-gamepad"></i> 游戏行为规则</h2>
+                
+                
+                <div class="rule-item">
+                    <h3>4. 禁止破坏</h3>
+                    <p>未经允许不得破坏他人建筑、偷窃物品。</p>
+                    <p class="consequence">违规处罚：直接封禁</p>
+                </div>
+                
+                <div class="rule-item">
+                    <h3>5. 领地保护</h3>
+                    <p>请合理使用领地系统，不得恶意圈地阻碍他人。</p>
+                    <p class="consequence">违规处罚：领地重置 → 封禁</p>
+                </div>
+                
+                <div class="rule-item">
+                    <h3>6. PvP规则</h3>
+                    <p>仅在指定PvP区域进行战斗，禁止恶意击杀。</p>
+                    <p class="consequence">违规处罚：警告 → 封禁</p>
+                </div>
+            </div>
+
+            <!-- 服务器管理规则 -->
+            <div class="rules-category">
+                <h2><i class="fas fa-cog"></i> 服务器管理</h2>
+                
+                <div class="rule-item">
+                    <h3>7. 遵守管理员指令</h3>
+                    <p>请配合管理员工作，遵守管理员的合理指令。</p>
+                    <p class="consequence">违规处罚：警告 → 封禁</p>
+                </div>
+                
+                <div class="rule-item">
+                    <h3>8. 举报机制</h3>
+                    <p>发现违规行为请及时向管理员举报，不得私自处理。</p>
+                </div>
+                
+                <div class="rule-item">
+                    <h3>9. 申诉流程</h3>
+                    <p>对处罚有异议可通过正规渠道申诉，不得在游戏中吵闹。</p>
+                </div>
+            </div>
+
+            <!-- 其他规则 -->
+            <div class="rules-category">
+                <h2><i class="fas fa-info-circle"></i> 其他注意事项</h2>
+                
+                <div class="rule-item">
+                    <h3>10. 账号安全</h3>
+                    <p>请妥善保管自己的账号，账号违规行为由账号持有人负责。</p>
+                </div>
+                
+                <div class="rule-item">
+                    <h3>11. 规则解释权</h3>
+                    <p>服务器管理团队保留对规则的最终解释权和修改权。</p>
+                </div>
+                
+                <div class="rule-item">
+                    <h3>12. 规则更新</h3>
+                    <p>规则可能会随时更新，请定期查看最新版本。</p>
+                </div>
+            </div>
+
+            <div class="back-to-home">
+                <a href="index.html">
+                    <i class="fas fa-arrow-left"></i>
+                    返回首页
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 筑界物语服务器. 保留所有权利.</p>
+            <div class="social-links">
+                <a href="#" title="Discord"><i class="fab fa-discord"></i></a>
+                <a href="#" title="QQ"><i class="fab fa-qq"></i></a>
+                <a href="#" title="Bilibili"><i class="fab fa-bilibili"></i></a>
+                <a href="#" title="YouTube"><i class="fab fa-youtube"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
