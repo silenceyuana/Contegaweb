@@ -129,6 +129,88 @@ app.post('/api/admin/login', async (req, res) => {
         res.status(500).json({ error: '服务器内部错误' });
     }
 });
+// =================================================================
+// server.js - 在 --- 8. 认证 API --- 部分的末尾添加以下代码
+// =================================================================
+
+// --- 玩家注册 API ---
+app.post('/api/register', async (req, res) => {
+    const { player_name, email, password } = req.body;
+
+    // 1. 验证输入
+    if (!player_name || !email || !password) {
+        return res.status(400).json({ error: '玩家名、邮箱和密码不能为空' });
+    }
+
+    try {
+        // 2. 加密密码
+        const salt = await bcrypt.genSalt(10);
+        const password_hash = await bcrypt.hash(password, salt);
+
+        // 3. 将新玩家插入数据库
+        const { data, error } = await supabase
+            .from('players')
+            .insert([{ player_name, email, password_hash }])
+            .select()
+            .single();
+
+        // 4. 处理错误 (例如，用户名或邮箱已存在)
+        if (error) {
+            if (error.code === '23505') { // PostgreSQL unique violation code
+                return res.status(409).json({ error: '玩家名或邮箱已被注册' });
+            }
+            throw error;
+        }
+
+        // 5. 注册成功
+        res.status(201).json({ message: '注册成功！', player: { id: data.id, player_name: data.player_name } });
+
+    } catch (err) {
+        console.error('注册时发生服务器错误:', err);
+        res.status(500).json({ error: '服务器内部错误' });
+    }
+});
+
+
+// --- 玩家登录 API ---
+app.post('/api/login', async (req, res) => {
+    // 'identifier' 可以是玩家名或邮箱
+    const { identifier, password } = req.body;
+
+    if (!identifier || !password) {
+        return res.status(400).json({ error: '玩家名/邮箱和密码不能为空' });
+    }
+
+    try {
+        // 1. 在数据库中查找玩家 (通过玩家名或邮箱)
+        const { data: player, error } = await supabase
+            .from('players')
+            .select('id, player_name, password_hash')
+            .or(`player_name.eq.${identifier},email.eq.${identifier}`)
+            .single();
+
+        if (error || !player) {
+            // 为安全起见，不明确指出是用户名还是密码错误
+            return res.status(401).json({ error: '凭据无效' });
+        }
+
+        // 2. 比较密码
+        const isMatch = await bcrypt.compare(password, player.password_hash);
+        if (!isMatch) {
+            return res.status(401).json({ error: '凭据无效' });
+        }
+
+        // 3. 登录成功，生成 JWT Token
+        const payload = { id: player.id, player_name: player.player_name };
+        const token = jwt.sign(payload, jwtSecret, { expiresIn: '1d' }); // Token 有效期1天
+
+        res.json({ message: '登录成功', token: token });
+
+    } catch (err) {
+        console.error('登录时发生服务器错误:', err);
+        res.status(500).json({ error: '服务器内部错误' });
+    }
+});
 
 
 // --- 9. 受保护的管理员 API 路由 ---

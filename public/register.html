@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>玩家注册 - 筑界物语服务器</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo"><a href="index.html"><i class="fas fa-cube"></i><span> 筑界物语服务器</span></a></div>
+                <ul class="nav-menu"><li class="nav-item"><a href="index.html" class="nav-link">返回首页</a></li></ul>
+            </div>
+        </nav>
+    </header>
+
+    <section class="admin-login" style="padding-top: 120px; min-height: 100vh;">
+        <div class="container">
+            <div class="login-container" style="max-width: 450px;">
+                <h2><i class="fas fa-user-plus"></i> 创建玩家账号</h2>
+                <form id="registerForm" class="login-form">
+                    <div class="form-group">
+                        <label for="username"><i class="fas fa-user"></i> 玩家名</label>
+                        <input type="text" id="username" required placeholder="输入您的游戏ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="email"><i class="fas fa-envelope"></i> 邮箱</label>
+                        <input type="email" id="email" required placeholder="用于找回密码等">
+                    </div>
+                    <div class="form-group">
+                        <label for="password"><i class="fas fa-key"></i> 密码</label>
+                        <input type="password" id="password" required placeholder="设置您的登录密码">
+                    </div>
+                    <button type="submit" class="minecraft-btn login-btn">
+                        <i class="fas fa-check"></i> 立即注册
+                    </button>
+                    <div id="formMessage" class="message" style="margin-top: 15px; text-align: center;"></div>
+                    <p style="text-align: center; margin-top: 20px;">
+                        已有账号？ <a href="login.html" style="color: #4CAF50;">点此登录</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- 注册逻辑的 JavaScript 代码 -->
+    <script>
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const messageDiv = document.getElementById('formMessage');
+        const submitButton = this.querySelector('button[type="submit"]');
+
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在注册...';
+        messageDiv.textContent = '';
+        
+        try {
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || '注册失败，请稍后再试');
+            }
+
+            messageDiv.textContent = '注册成功！正在跳转到登录页面...';
+            messageDiv.style.color = '#2ecc71';
+            
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+
+        } catch (error) {
+            messageDiv.textContent = error.message;
+            messageDiv.style.color = '#e74c3c';
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-check"></i> 立即注册';
+        }
+    });
+</script>
+</body>
+</html>
