@@ -135,6 +135,7 @@ app.post('/api/admin/login', async (req, res) => {
 
 // --- 玩家注册 API ---
 app.post('/api/register', async (req, res) => {
+    console.log('收到 /api/register 请求。请求体 (req.body) 是:', req.body);
     const { player_name, email, password } = req.body;
 
     // 1. 验证输入
