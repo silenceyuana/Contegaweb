@@ -385,3 +385,15 @@ section h2 {
         padding: 2rem 1.5rem;
     }
 }
+/* =================================================================
+// 按钮禁用状态美化 (Button Disabled State Styling)
+// ================================================================= */
+
+.minecraft-btn:disabled,
+.cta-button:disabled {
+    background: linear-gradient(45deg, #5a6e5a, #687a69); /* 使用一个更暗、更灰的绿色 */
+    opacity: 0.6; /* 降低透明度 */
+    cursor: not-allowed; /* 鼠标悬停时显示“禁止”图标 */
+    box-shadow: none; /* 移除阴影 */
+    transform: none; /* 移除悬停时的位移效果 */
+}
