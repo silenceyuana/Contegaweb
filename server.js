@@ -147,6 +147,76 @@ app.post('/api/contact', verifyToken, async (req, res) => {
     } catch (error) { res.status(500).json({ error: '服务器内部错误，提交失败' }); }
 });
 
+// 获取玩家状态（积分和是否可签到）
+app.get('/api/player/status', verifyToken, async (req, res) => {
+    const { id: playerId } = req.user;
+    try {
+        const { data: player, error } = await supabase
+            .from('players')
+            .select('score, last_checkin_date')
+            .eq('id', playerId)
+            .single();
+
+        if (error) throw error;
+
+        // 检查今天是否已经签到
+        const today = new Date().toISOString().split('T')[0]; // 获取 YYYY-MM-DD 格式的今天日期 (UTC)
+        const canCheckIn = player.last_checkin_date !== today;
+
+        res.json({
+            score: player.score,
+            canCheckIn: canCheckIn
+        });
+
+    } catch (error) {
+        res.status(500).json({ error: '无法获取玩家状态' });
+    }
+});
+
+// 处理玩家签到
+app.post('/api/player/checkin', verifyToken, async (req, res) => {
+    const { id: playerId } = req.user;
+    try {
+        // 1. 再次从数据库获取最新信息，防止并发问题
+        const { data: player, error: fetchError } = await supabase
+            .from('players')
+            .select('score, last_checkin_date')
+            .eq('id', playerId)
+            .single();
+        
+        if (fetchError) throw fetchError;
+
+        // 2. 验证是否可以签到
+        const today = new Date().toISOString().split('T')[0];
+        if (player.last_checkin_date === today) {
+            return res.status(400).json({ error: '今天已经签过到了，明天再来吧！' });
+        }
+
+        // 3. 计算奖励并更新数据库
+        const gainedScore = Math.floor(Math.random() * 51); // 0-50 的随机整数
+        const newTotalScore = player.score + gainedScore;
+
+        const { data: updatedPlayer, error: updateError } = await supabase
+            .from('players')
+            .update({ score: newTotalScore, last_checkin_date: today })
+            .eq('id', playerId)
+            .select('score')
+            .single();
+
+        if (updateError) throw updateError;
+        
+        res.json({
+            message: `签到成功！获得 ${gainedScore} 积分。`,
+            newScore: updatedPlayer.score,
+            gainedScore: gainedScore
+        });
+
+    } catch (error) {
+        console.error('签到时发生服务器错误:', error);
+        res.status(500).json({ error: '签到失败，服务器内部错误' });
+    }
+});
+
 // --- 10. 受保护的管理员 API ---
 // 工单管理
 app.get('/api/admin/messages', verifyToken, async (req, res) => {

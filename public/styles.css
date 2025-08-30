@@ -420,3 +420,38 @@ body.admin-view .sponsor-item {
 .admin-action {
     text-align: right;
 }
+
+/* styles.css (在末尾添加) */
+
+/* --- 签到模块样式 --- */
+.checkin {
+    background: rgba(33, 47, 69, 0.8);
+    padding: 60px 0; /* 减小一点上下边距 */
+}
+.checkin-content {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    padding: 2rem;
+    max-width: 500px;
+    margin: 0 auto;
+    text-align: center;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+.score-display {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+#player-score-display {
+    color: #ffd700; /* 金色积分 */
+    font-weight: bold;
+}
+#checkin-btn {
+    width: 100%;
+    max-width: 250px;
+    margin: 0 auto;
+}
+#checkin-message {
+    margin-top: 1.5rem;
+    font-weight: bold;
+    min-height: 24px; /* 防止布局跳动 */
+}
