@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>后台 - 商城订单管理</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #1e272e; }
+        .dashboard { padding: 100px 20px 40px; }
+        .dashboard-header { text-align: center; margin-bottom: 2rem; color: #fff; }
+        .message-table { width: 100%; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; border-collapse: collapse; }
+        .message-table th, .message-table td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .message-table th { background: rgba(76, 175, 80, 0.2); }
+        .status-pending { color: #f39c12; font-weight: bold; }
+        .status-completed { color: #2ecc71; }
+        .action-btn { background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar"><div class="nav-container"><div class="nav-logo"><a href="index.html"><i class="fas fa-cube"></i><span> 筑界物语服务器</span></a></div><ul class="nav-menu"><li class="nav-item"><a href="admin-dashboard.html">返回工单后台</a></li></ul></div></nav>
+    </header>
+
+    <main class="dashboard">
+        <div class="container">
+            <div class="dashboard-header"><h1><i class="fas fa-shopping-cart"></i> 商城订单管理</h1></div>
+            <table class="message-table">
+                <thead>
+                    <tr>
+                        <th>订单ID</th>
+                        <th>玩家</th>
+                        <th>商品</th>
+                        <th>价格</th>
+                        <th>购买时间</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="purchasesContainer"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        const adminToken = localStorage.getItem('adminAuthToken');
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!adminToken) {
+                alert('请先登录！');
+                window.location.href = 'admin-login.html';
+                return;
+            }
+            fetchPurchases();
+        });
+
+        async function fetchPurchases() {
+            const container = document.getElementById('purchasesContainer');
+            try {
+                const response = await fetch('/api/admin/purchases', { headers: { 'Authorization': `Bearer ${adminToken}` } });
+                if (!response.ok) throw new Error('登录失效或无权限');
+                const purchases = await response.json();
+                container.innerHTML = purchases.map(p => `
+                    <tr id="purchase-${p.id}">
+                        <td>${p.id}</td>
+                        <td>${p.players ? p.players.player_name : 'N/A'}</td>
+                        <td>${p.item_name}</td>
+                        <td>${p.price_paid}</td>
+                        <td>${new Date(p.purchase_date).toLocaleString()}</td>
+                        <td class="${p.status === '待处理' ? 'status-pending' : 'status-completed'}">${p.status}</td>
+                        <td>${p.status === '待处理' ? `<button class="action-btn" onclick="markAsCompleted(${p.id})">标记为已发货</button>` : '无需操作'}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = `<tr><td colspan="7" style="color:red;">加载失败: ${error.message}</td></tr>`;
+            }
+        }
+
+        async function markAsCompleted(id) {
+            try {
+                const response = await fetch(`/api/admin/purchases/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+                    body: JSON.stringify({ status: '已发货' })
+                });
+                if (!response.ok) throw new Error('更新失败');
+                alert('操作成功！');
+                fetchPurchases(); // 重新加载列表
+            } catch (error) {
+                alert(`错误: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

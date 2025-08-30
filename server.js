@@ -1,5 +1,5 @@
 // =================================================================
-// server.js - 最终完整版 v5.0 (功能全面且经过加固)
+// server.js - 最终完整版 v6.0 (集成积分商城)
 // =================================================================
 // 关键特性:
 // 1. 完整的玩家与管理员认证流程 (注册, 登录, Token验证)。
@@ -8,7 +8,9 @@
 // 4. 【已修复并加固】签到API逻辑，确保在高并发下也能正确运行。
 // 5. 为封禁墙和赞助名单提供了安全的、基于数据库的增删查API。
 // 6. 支持管理员在前端实时编辑内容 (CMS)。
-// 7. 为Vercel无服务器环境进行了正确配置和导出。
+// 7. 【新增】完整的积分商城功能，包括商品展示、购买、扣分、订单记录。
+// 8. 【新增】管理员后台查看并处理商城订单的功能。
+// 9. 为Vercel无服务器环境进行了正确配置和导出。
 // =================================================================
 
 // --- 1. 引入依赖 ---
@@ -46,6 +48,7 @@ const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
     if (!token) return res.status(403).json({ error: '没有提供Token，禁止访问' });
+
     jwt.verify(token, jwtSecret, (err, user) => {
         if (err) return res.status(401).json({ error: 'Token无效或已过期' });
         req.user = user;
@@ -56,6 +59,7 @@ const verifyToken = (req, res, next) => {
 // --- 6. 页面路由 ---
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin-login.html')));
+// 注意：您可能需要为 shop.html 和 admin-shop-dashboard.html 添加路由，但通常 express.static 会处理好
 
 // --- 7. 公共 API 路由 (无需登录) ---
 app.get('/api/rules', async (req, res) => { try { const { data, error } = await supabase.from('server_rules').select('*').order('id'); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
@@ -63,7 +67,7 @@ app.get('/api/commands', async (req, res) => { try { const { data, error } = awa
 app.get('/api/bans', async (req, res) => { try { const { data, error } = await supabase.from('banned_players').select('*').order('ban_date', { ascending: false }); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
 app.get('/api/sponsors', async (req, res) => { try { const { data, error } = await supabase.from('sponsors').select('*').order('created_at', { ascending: false }); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
 
-// --- 8. 认证与玩家 API ---
+// --- 8. 认证 API ---
 app.post('/api/register', async (req, res) => { const { player_name, email, password } = req.body; if (!player_name || !email || !password) return res.status(400).json({ error: '玩家名、邮箱和密码不能为空' }); try { const password_hash = await bcrypt.hash(password, 10); const { data, error } = await supabase.from('players').insert([{ player_name, email, password_hash }]).select().single(); if (error) { if (error.code === '23505') return res.status(409).json({ error: '玩家名或邮箱已被注册' }); throw error; } res.status(201).json({ message: '注册成功！', player: { id: data.id, player_name: data.player_name } }); } catch (err) { console.error('注册错误:', err); res.status(500).json({ error: '服务器内部错误' }); } });
 app.post('/api/login', async (req, res) => { const { identifier, password } = req.body; if (!identifier || !password) return res.status(400).json({ error: '玩家名/邮箱和密码不能为空' }); try { const { data: player, error } = await supabase.from('players').select('id, player_name, password_hash').or(`player_name.eq.${identifier},email.eq.${identifier}`).single(); if (error || !player) return res.status(401).json({ error: '凭据无效' }); const isMatch = await bcrypt.compare(password, player.password_hash); if (!isMatch) return res.status(401).json({ error: '凭据无效' }); const payload = { id: player.id, player_name: player.player_name }; const token = jwt.sign(payload, jwtSecret, { expiresIn: '1d' }); res.json({ message: '登录成功', token, user: { id: player.id, username: player.player_name } }); } catch (err) { console.error('登录错误:', err); res.status(500).json({ error: '服务器内部错误' }); } });
 app.post('/api/admin/login', async (req, res) => { const { username, password } = req.body; if (!username || !password) return res.status(400).json({ error: '用户名和密码不能为空' }); try { const { data: user, error } = await supabase.from('users').select('id, username, password_hash').eq('username', username).single(); if (error || !user) return res.status(401).json({ error: '用户名或密码错误' }); const isMatch = await bcrypt.compare(password, user.password_hash); if (!isMatch) return res.status(401).json({ error: '用户名或密码错误' }); const payload = { id: user.id, username: user.username, isAdmin: true }; const token = jwt.sign(payload, jwtSecret, { expiresIn: '8h' }); res.json({ message: '登录成功', token }); } catch (err) { console.error('管理员登录错误:', err); res.status(500).json({ error: '服务器内部错误' }); } });
@@ -71,9 +75,67 @@ app.post('/api/admin/login', async (req, res) => { const { username, password } 
 // --- 9. 受保护的玩家 API ---
 app.post('/api/contact', verifyToken, async (req, res) => { const { message } = req.body; const { id: playerId, player_name } = req.user; if (!message) return res.status(400).json({ error: '消息内容不能为空' }); try { const { data: playerData, error: playerError } = await supabase.from('players').select('email').eq('id', playerId).single(); if (playerError || !playerData) throw new Error('无法找到关联的用户信息'); const { data, error } = await supabase.from('contact_messages').insert([{ player_name, email: playerData.email, message }]).select(); if (error) throw error; res.status(201).json({ message: '消息发送成功', data: data[0] }); } catch (error) { console.error('提交工单错误:', error); res.status(500).json({ error: '服务器内部错误，提交失败' }); } });
 app.get('/api/player/status', verifyToken, async (req, res) => { const { id: playerId } = req.user; try { const { data: player, error } = await supabase.from('players').select('score, last_checkin_date').eq('id', playerId).single(); if (error) throw error; const today = new Date().toISOString().split('T')[0]; const canCheckIn = player.last_checkin_date !== today; res.json({ score: player.score, canCheckIn: canCheckIn }); } catch (error) { console.error('获取玩家状态错误:', error); res.status(500).json({ error: '无法获取玩家状态' }); } });
-app.post('/api/player/checkin', verifyToken, async (req, res) => { const { id: playerId } = req.user; try { const { data: player, error: fetchError } = await supabase.from('players').select('score, last_checkin_date').eq('id', playerId).single(); if (fetchError) throw fetchError; const today = new Date().toISOString().split('T')[0]; if (player.last_checkin_date === today) return res.status(400).json({ error: '今天已经签过到了，明天再来吧！' }); const gainedScore = Math.floor(Math.random() * 51); const newTotalScore = (player.score || 0) + gainedScore; const { data: updatedData, error: updateError } = await supabase.from('players').update({ score: newTotalScore, last_checkin_date: today }).eq('id', playerId).select('score'); if (updateError) throw updateError; if (!updatedData || updatedData.length === 0) throw new Error('更新玩家数据后未能收到返回结果。'); const updatedPlayer = updatedData[0]; res.json({ message: `签到成功！获得 ${gainedScore} 积分。`, newScore: updatedPlayer.score, gainedScore: gainedScore }); } catch (error) { console.error('签到时发生服务器错误:', error); res.status(500).json({ error: '签到失败，服务器内部错误' }); } });
+app.post('/api/player/checkin', verifyToken, async (req, res) => { const { id: playerId } = req.user; try { const { data: player, error: fetchError } = await supabase.from('players').select('score, last_checkin_date').eq('id', playerId).single(); if (fetchError) throw fetchError; const today = new Date().toISOString().split('T')[0]; if (player.last_checkin_date === today) return res.status(400).json({ error: '今天已经签过到了，明天再来吧！' }); const gainedScore = Math.floor(Math.random() * 51) + 10; const newTotalScore = (player.score || 0) + gainedScore; const { data: updatedData, error: updateError } = await supabase.from('players').update({ score: newTotalScore, last_checkin_date: today }).eq('id', playerId).select('score'); if (updateError) throw updateError; if (!updatedData || updatedData.length === 0) throw new Error('更新玩家数据后未能收到返回结果。'); const updatedPlayer = updatedData[0]; res.json({ message: `签到成功！获得 ${gainedScore} 积分。`, newScore: updatedPlayer.score, gainedScore: gainedScore }); } catch (error) { console.error('签到时发生服务器错误:', error); res.status(500).json({ error: '签到失败，服务器内部错误' }); } });
 
-// --- 10. 受保护的管理员 API ---
+// --- 10. 商城 API ---
+
+// 公共API：获取所有上架的商品
+app.get('/api/shop/items', async (req, res) => {
+    try {
+        const { data, error } = await supabase.from('shop_items').select('*').eq('is_available', true).order('price');
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: '无法获取商品列表: ' + error.message });
+    }
+});
+
+// 受保护的玩家API：购买商品
+app.post('/api/shop/purchase', verifyToken, async (req, res) => {
+    const { itemId } = req.body;
+    const { id: playerId } = req.user;
+    if (!itemId) return res.status(400).json({ error: '未提供商品ID' });
+
+    try {
+        const { data: item, error: itemError } = await supabase.from('shop_items').select('*').eq('id', itemId).single();
+        if (itemError || !item) return res.status(404).json({ error: '商品不存在或已下架' });
+
+        const { data: player, error: playerError } = await supabase.from('players').select('score').eq('id', playerId).single();
+        if (playerError || !player) return res.status(404).json({ error: '玩家信息不存在' });
+
+        if (player.score < item.price) return res.status(400).json({ error: '积分不足，无法购买' });
+
+        const newScore = player.score - item.price;
+        const { error: updateError } = await supabase.from('players').update({ score: newScore }).eq('id', playerId);
+        if (updateError) throw new Error('扣除积分失败');
+
+        const { data: purchase, error: insertError } = await supabase.from('purchase_history').insert({ player_id: playerId, item_id: item.id, item_name: item.name, price_paid: item.price }).select().single();
+        if (insertError) {
+            await supabase.from('players').update({ score: player.score }).eq('id', playerId);
+            throw new Error('创建购买记录失败，积分已返还');
+        }
+        res.status(201).json({ message: '购买成功！管理员将尽快为您发货。', newScore, purchase });
+
+    } catch (error) {
+        console.error('购买时发生服务器错误:', error);
+        res.status(500).json({ error: '购买失败: ' + error.message });
+    }
+});
+
+// 受保护的玩家API：获取自己的购买记录
+app.get('/api/player/purchases', verifyToken, async (req, res) => {
+    const { id: playerId } = req.user;
+    try {
+        const { data, error } = await supabase.from('purchase_history').select('*').eq('player_id', playerId).order('purchase_date', { ascending: false });
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: '无法获取购买记录: ' + error.message });
+    }
+});
+
+// --- 11. 受保护的管理员 API ---
+// (工单、规则、封禁、赞助)
 app.get('/api/admin/messages', verifyToken, async (req, res) => { try { const { data, error } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false }); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
 app.delete('/api/admin/messages/:id', verifyToken, async (req, res) => { const { id } = req.params; try { await supabase.from('contact_messages').delete().eq('id', id); res.status(200).json({ message: '工单删除成功' }); } catch (error) { res.status(500).json({ error: error.message }); } });
 app.post('/api/admin/rules', verifyToken, async (req, res) => { const { category, description } = req.body; if (!category || !description) return res.status(400).json({ error: '规则类别和描述不能为空' }); try { const { data, error } = await supabase.from('server_rules').insert([{ category, description }]).select().single(); if (error) throw error; res.status(201).json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
@@ -83,7 +145,33 @@ app.delete('/api/admin/bans/:id', verifyToken, async (req, res) => { const { id 
 app.post('/api/admin/sponsors', verifyToken, async (req, res) => { const { name, amount } = req.body; if (!name || !amount) return res.status(400).json({ error: '名称和金额不能为空' }); try { const { data, error } = await supabase.from('sponsors').insert([{ name, amount }]).select().single(); if (error) throw error; res.status(201).json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
 app.delete('/api/admin/sponsors/:id', verifyToken, async (req, res) => { const { id } = req.params; try { await supabase.from('sponsors').delete().eq('id', id); res.status(200).json({ message: '赞助记录删除成功' }); } catch (error) { res.status(500).json({ error: error.message }); } });
 
-// --- 11. 启动与导出 ---
+// (商城管理)
+app.get('/api/admin/purchases', verifyToken, async (req, res) => {
+    if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
+    try {
+        const { data, error } = await supabase.from('purchase_history').select(`*, players (player_name)`).order('purchase_date', { ascending: false });
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: '获取购买记录失败: ' + error.message });
+    }
+});
+app.patch('/api/admin/purchases/:id', verifyToken, async (req, res) => {
+    if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!status) return res.status(400).json({ error: '未提供状态' });
+    try {
+        const { data, error } = await supabase.from('purchase_history').update({ status }).eq('id', id).select();
+        if (error) throw error;
+        res.json({ message: '状态更新成功', data: data[0] });
+    } catch (error) {
+        res.status(500).json({ error: '更新失败: ' + error.message });
+    }
+});
+
+
+// --- 12. 启动与导出 ---
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
         console.log(`本地开发服务器已启动，访问 http://localhost:${PORT}`);
