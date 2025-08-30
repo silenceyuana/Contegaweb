@@ -20,22 +20,29 @@
             font-size: 1.2rem;
         }
         #current-score { color: #ffd700; font-weight: bold; }
-        .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+        .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
+        
+        /* --- 【核心样式修改】 --- */
         .shop-item {
             background: rgba(0,0,0,0.4);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 10px;
             padding: 1.5rem;
             text-align: center;
-            display: flex;
-            flex-direction: column;
         }
-        .item-image { width: 80px; height: 80px; margin: 0 auto 1rem; image-rendering: pixelated; }
-        .item-name { font-size: 1.3rem; color: #fff; margin-bottom: 0.5rem; }
-        .item-desc { color: #bdc3c7; flex-grow: 1; margin-bottom: 1rem; }
-        .item-price { font-size: 1.5rem; color: #ffd700; margin-bottom: 1rem; }
-        .purchase-btn { background: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
-        .purchase-btn:disabled { background: #555; cursor: not-allowed; }
+        .item-name { 
+            font-size: 1.3rem; 
+            color: #fff; 
+            margin-bottom: 1.5rem; /* 增大名称和价格的间距 */
+        }
+        .item-price { 
+            font-size: 1.5rem; 
+            color: #ffd700; 
+            margin-bottom: 1.5rem; 
+        }
+        .purchase-btn { background: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%; }
+        /* --- 【以上为核心样式修改】 --- */
+
         .purchase-history { margin-top: 3rem; }
         .history-table { width: 100%; border-collapse: collapse; }
         .history-table th, .history-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -49,7 +56,6 @@
                 <div class="nav-logo"><a href="index.html"><i class="fas fa-cube"></i><span> 筑界物语服务器</span></a></div>
                 <ul class="nav-menu">
                     <li class="nav-item"><a href="index.html" class="nav-link">返回首页</a></li>
-                    <!-- 此处 auth-container 会被 script.js 动态填充 -->
                     <li id="auth-container" class="nav-item">
                         <a href="login.html" class="nav-link"><b>登录</b></a>
                     </li>
@@ -80,14 +86,7 @@
                 <div class="purchase-history">
                     <h2 style="text-align:center; margin-bottom: 1.5rem;">我的购买记录</h2>
                     <table class="history-table">
-                        <thead>
-                            <tr>
-                                <th>商品名称</th>
-                                <th>花费积分</th>
-                                <th>购买日期</th>
-                                <th>状态</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>商品名称</th><th>花费积分</th><th>购买日期</th><th>状态</th></tr></thead>
                         <tbody id="purchaseHistoryContainer"></tbody>
                     </table>
                 </div>
@@ -95,7 +94,7 @@
         </div>
     </main>
 
-    <script src="script.js"></script> <!-- 复用首页的脚本来处理登录状态 -->
+    <script src="script.js"></script>
     <script>
         const playerToken = localStorage.getItem('playerAuthToken');
         const isLoggedIn = !!playerToken;
@@ -116,75 +115,27 @@
             try {
                 const response = await fetch('/api/shop/items');
                 const items = await response.json();
+                
+                // --- 【核心JS修改】 ---
+                // 移除了模板中的 <img> 和 <p class="item-desc">
                 grid.innerHTML = items.map(item => `
                     <div class="shop-item">
-                        <img src="${item.image_url || 'images/chest.png'}" alt="${item.name}" class="item-image">
                         <h3 class="item-name">${item.name}</h3>
-                        <p class="item-desc">${item.description || ''}</p>
                         <div class="item-price"><i class="fas fa-coins"></i> ${item.price}</div>
                         <button class="purchase-btn" onclick="purchaseItem(${item.id})">购买</button>
                     </div>
                 `).join('');
+                // --- 【以上为核心JS修改】 ---
+
             } catch (error) {
                 grid.innerHTML = '<p>加载商品失败，请刷新页面。</p>';
             }
         }
         
-        async function fetchPlayerStatus() {
-            const scoreSpan = document.getElementById('current-score');
-            try {
-                 const response = await fetch('/api/player/status', { headers: { 'Authorization': `Bearer ${playerToken}` } });
-                 const data = await response.json();
-                 scoreSpan.textContent = data.score;
-            } catch (error) {
-                 scoreSpan.textContent = '获取失败';
-            }
-        }
-
-        async function fetchPurchaseHistory() {
-            const historyContainer = document.getElementById('purchaseHistoryContainer');
-            try {
-                const response = await fetch('/api/player/purchases', { headers: { 'Authorization': `Bearer ${playerToken}` } });
-                const history = await response.json();
-                if(history.length === 0){
-                    historyContainer.innerHTML = '<tr><td colspan="4" style="text-align:center;">暂无购买记录</td></tr>';
-                    return;
-                }
-                historyContainer.innerHTML = history.map(p => `
-                    <tr>
-                        <td>${p.item_name}</td>
-                        <td>${p.price_paid}</td>
-                        <td>${new Date(p.purchase_date).toLocaleString()}</td>
-                        <td>${p.status}</td>
-                    </tr>
-                `).join('');
-            } catch (error) {
-                historyContainer.innerHTML = '<tr><td colspan="4" style="color:red;">加载历史记录失败</td></tr>';
-            }
-        }
-
-        async function purchaseItem(itemId) {
-            if (!confirm('确定要购买此商品吗？积分将被扣除。')) return;
-
-            try {
-                const response = await fetch('/api/shop/purchase', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${playerToken}`
-                    },
-                    body: JSON.stringify({ itemId })
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.error);
-                
-                alert('购买成功！');
-                document.getElementById('current-score').textContent = result.newScore; // 更新页面上的积分
-                fetchPurchaseHistory(); // 刷新购买历史
-            } catch (error) {
-                alert(`购买失败: ${error.message}`);
-            }
-        }
+        // 其他JS函数 (fetchPlayerStatus, fetchPurchaseHistory, purchaseItem) 保持不变...
+        async function fetchPlayerStatus() { const scoreSpan = document.getElementById('current-score'); try { const response = await fetch('/api/player/status', { headers: { 'Authorization': `Bearer ${playerToken}` } }); const data = await response.json(); scoreSpan.textContent = data.score; } catch (error) { scoreSpan.textContent = '获取失败'; } }
+        async function fetchPurchaseHistory() { const historyContainer = document.getElementById('purchaseHistoryContainer'); try { const response = await fetch('/api/player/purchases', { headers: { 'Authorization': `Bearer ${playerToken}` } }); const history = await response.json(); if(history.length === 0){ historyContainer.innerHTML = '<tr><td colspan="4" style="text-align:center;">暂无购买记录</td></tr>'; return; } historyContainer.innerHTML = history.map(p => `<tr><td>${p.item_name}</td><td>${p.price_paid}</td><td>${new Date(p.purchase_date).toLocaleString()}</td><td>${p.status}</td></tr>`).join(''); } catch (error) { historyContainer.innerHTML = '<tr><td colspan="4" style="color:red;">加载历史记录失败</td></tr>'; } }
+        async function purchaseItem(itemId) { if (!confirm('确定要购买此商品吗？积分将被扣除。')) return; try { const response = await fetch('/api/shop/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${playerToken}` }, body: JSON.stringify({ itemId }) }); const result = await response.json(); if (!response.ok) throw new Error(result.error); alert('购买成功！'); document.getElementById('current-score').textContent = result.newScore; fetchPurchaseHistory(); } catch (error) { alert(`购买失败: ${error.message}`); } }
     </script>
 </body>
 </html>

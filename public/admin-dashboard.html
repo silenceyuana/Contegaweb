@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理员后台 - 工单系统</title>
+    <title>管理员后台</title>
     <link rel="icon" type="image/x-icon" href="images/1.png">
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -12,20 +12,52 @@
         .dashboard { padding: 100px 20px 40px; }
         .dashboard-header { text-align: center; margin-bottom: 2rem; color: #fff; }
         .dashboard-header h1 { color: #4CAF50; }
-        .message-table { width: 100%; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; border-collapse: collapse; }
-        .message-table th, .message-table td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-        .message-table th { background: rgba(76, 175, 80, 0.2); color: #4CAF50; }
-        .message-item.is-read { opacity: 0.6; background: rgba(0,0,0,0.2); }
-        .message-item.is-read:hover { opacity: 0.8; }
-        .message-content { white-space: pre-wrap; max-width: 400px; word-wrap: break-word; }
-        .action-buttons button { background: none; border: 1px solid #fff; color: #fff; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-right: 5px; transition: all 0.3s ease; }
-        .action-buttons .btn-read { border-color: #2ecc71; color: #2ecc71; }
-        .action-buttons .btn-read:hover { background: #2ecc71; color: #1e272e; }
-        .action-buttons .btn-delete { border-color: #e74c3c; color: #e74c3c; }
-        .action-buttons .btn-delete:hover { background: #e74c3c; color: #fff; }
-        .loading, .no-messages { text-align: center; padding: 20px; font-size: 1.2rem; }
         .admin-info { text-align: center; margin-bottom: 1.5rem; }
         .logout-btn { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+
+        /* --- 【新增】标签页样式 --- */
+        .dashboard-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            color: #bdc3c7;
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+        .tab-btn.active {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #4CAF50;
+        }
+        /* --- 结束新增样式 --- */
+        
+        .message-table { width: 100%; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; border-collapse: collapse; }
+        .message-table th, .message-table td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .message-table th { background: rgba(76, 175, 80, 0.2); }
+        .action-buttons button { background: none; border: 1px solid #fff; color: #fff; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .btn-delete { border-color: #e74c3c; color: #e74c3c; }
+        .btn-delete:hover { background: #e74c3c; color: #fff; }
+
+        /* --- 【新增】订单状态样式 --- */
+        .status-pending { color: #f39c12; font-weight: bold; }
+        .status-completed { color: #2ecc71; }
+        .action-btn-complete { background: #3498db; color: white; }
     </style>
 </head>
 <body>
@@ -41,165 +73,156 @@
     <main class="dashboard">
         <div class="container">
             <div class="dashboard-header">
-                <h1><i class="fas fa-envelope-open-text"></i> 工单管理后台</h1>
-                <p>这里是所有用户提交的联系信息</p>
+                <h1 id="dashboard-title"><i class="fas fa-tachometer-alt"></i> 管理员后台</h1>
             </div>
+
+            <div class="dashboard-tabs">
+                <button class="tab-btn active" onclick="switchTab('tickets', this)"><i class="fas fa-envelope-open-text"></i> 工单管理</button>
+                <button class="tab-btn" onclick="switchTab('orders', this)"><i class="fas fa-shopping-cart"></i> 商城订单</button>
+            </div>
+            
             <div class="admin-info"><button class="logout-btn" onclick="logout()">安全退出</button></div>
-            <table class="message-table">
-                <thead>
-                    <tr>
-                        <th>提交时间</th>
-                        <th>玩家名称</th>
-                        <th>邮箱</th>
-                        <th>消息内容</th>
-                        <th>状态</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="messagesContainer"></tbody>
-            </table>
-            <div id="loadingIndicator" class="loading"><p><i class="fas fa-spinner fa-spin"></i> 正在加载工单...</p></div>
+
+            <!-- 工单视图 -->
+            <div id="tickets-view">
+                <table class="message-table">
+                    <thead><tr><th>提交时间</th><th>玩家名称</th><th>邮箱</th><th>消息内容</th><th>操作</th></tr></thead>
+                    <tbody id="ticketsContainer"></tbody>
+                </table>
+            </div>
+
+            <!-- 商城订单视图 (默认隐藏) -->
+            <div id="orders-view" style="display: none;">
+                <table class="message-table">
+                    <thead><tr><th>订单ID</th><th>玩家</th><th>商品</th><th>价格</th><th>购买时间</th><th>状态</th><th>操作</th></tr></thead>
+                    <tbody id="ordersContainer"></tbody>
+                </table>
+            </div>
+
+            <div id="loadingIndicator" style="text-align: center; padding: 20px; font-size: 1.2rem;"><p><i class="fas fa-spinner fa-spin"></i> 正在加载...</p></div>
         </div>
     </main>
 
     <script>
-        // --- 页面加载时的核心安全检查 ---
+        // --- 核心安全检查 ---
+        const adminToken = localStorage.getItem('adminAuthToken');
         document.addEventListener('DOMContentLoaded', function() {
-            const token = localStorage.getItem('adminAuthToken');
-            if (!token) {
-                // 如果本地存储中没有Token，说明未登录，立即重定向
+            if (!adminToken) {
                 alert('您没有权限访问此页面，请先登录！');
                 window.location.href = 'admin-login.html';
-            } else {
-                // 如果有Token，则去获取工单数据
-                fetchMessages();
+                return;
             }
+            // 默认加载工单
+            fetchTickets();
         });
 
-        // --- API 请求函数 ---
+        // --- 标签页切换逻辑 ---
+        function switchTab(tabName, element) {
+            document.getElementById('tickets-view').style.display = 'none';
+            document.getElementById('orders-view').style.display = 'none';
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(`${tabName}-view`).style.display = 'block';
+            element.classList.add('active');
 
-        /**
-         * 从后端API获取所有工单，并在请求头中附带Token
-         */
-        async function fetchMessages() {
-            const container = document.getElementById('messagesContainer');
+            if (tabName === 'tickets') {
+                document.getElementById('dashboard-title').innerHTML = '<i class="fas fa-envelope-open-text"></i> 工单管理';
+                fetchTickets();
+            } else if (tabName === 'orders') {
+                document.getElementById('dashboard-title').innerHTML = '<i class="fas fa-shopping-cart"></i> 商城订单管理';
+                fetchOrders();
+            }
+        }
+
+        // --- 工单功能 ---
+        async function fetchTickets() {
+            const container = document.getElementById('ticketsContainer');
             const loading = document.getElementById('loadingIndicator');
-            const token = localStorage.getItem('adminAuthToken');
-
-            container.innerHTML = '';
             loading.style.display = 'block';
+            container.innerHTML = '';
 
             try {
-                const response = await fetch('/api/admin/messages', {
-                    headers: {
-                        'Authorization': `Bearer ${token}` // **核心改动**：添加认证头
-                    }
-                });
-
-                // 如果Token无效或过期，服务器会返回401或403
-                if (response.status === 401 || response.status === 403) {
-                    alert('您的登录已过期，请重新登录。');
-                    logout(); // 自动退出并跳转
-                    return;
-                }
-                if (!response.ok) throw new Error('获取工单失败，请刷新页面重试');
-
-                const messages = await response.json();
-
-                if (messages.length === 0) {
-                    container.innerHTML = '<tr><td colspan="6" class="no-messages">太棒了！没有待处理的工单。</td></tr>';
-                } else {
-                    messages.forEach(msg => {
-                        const row = document.createElement('tr');
-                        row.className = 'message-item';
-                        row.id = `message-${msg.id}`;
-                        if (msg.is_read) row.classList.add('is-read');
-
-                        row.innerHTML = `
+                const response = await fetch('/api/admin/messages', { headers: { 'Authorization': `Bearer ${adminToken}` } });
+                if (response.status === 401 || response.status === 403) { logout(); return; }
+                const tickets = await response.json();
+                
+                if (tickets.length === 0) { container.innerHTML = '<tr><td colspan="5" style="text-align:center;">没有待处理的工单。</td></tr>'; } 
+                else {
+                    container.innerHTML = tickets.map(msg => `
+                        <tr id="ticket-${msg.id}">
                             <td>${new Date(msg.created_at).toLocaleString('zh-CN')}</td>
                             <td>${escapeHTML(msg.player_name)}</td>
                             <td>${escapeHTML(msg.email)}</td>
-                            <td class="message-content">${escapeHTML(msg.message)}</td>
-                            <td>${msg.is_read ? '已读' : '<strong>未读</strong>'} (${escapeHTML(msg.status || '待处理')})</td>
-                            <td class="action-buttons">
-                                <button class="btn-read" onclick="toggleReadStatus(${msg.id}, ${!msg.is_read})">${msg.is_read ? '标为未读' : '标为已读'}</button>
-                                <button class="btn-delete" onclick="deleteMessage(${msg.id})">删除</button>
-                            </td>
-                        `;
-                        container.appendChild(row);
-                    });
+                            <td>${escapeHTML(msg.message)}</td>
+                            <td class="action-buttons"><button class="btn-delete" onclick="deleteTicket(${msg.id})">删除</button></td>
+                        </tr>`).join('');
                 }
-            } catch (error) {
-                console.error('获取工单错误:', error);
-                container.innerHTML = `<tr><td colspan="6" class="no-messages" style="color: #e74c3c;">加载失败: ${error.message}</td></tr>`;
-            } finally {
-                loading.style.display = 'none';
-            }
+            } catch (error) { container.innerHTML = `<tr><td colspan="5" style="color:red;">加载失败: ${error.message}</td></tr>`; } 
+            finally { loading.style.display = 'none'; }
         }
 
-        /**
-         * 切换工单的已读/未读状态
-         */
-        async function toggleReadStatus(id, newReadStatus) {
-            const token = localStorage.getItem('adminAuthToken');
+        async function deleteTicket(id) {
+            if (!confirm('确定要永久删除这条工单吗？')) return;
             try {
-                const response = await fetch(`/api/admin/messages/${id}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}` // **核心改动**
-                    },
-                    body: JSON.stringify({ is_read: newReadStatus })
-                });
-                if (!response.ok) throw new Error('更新状态失败');
-                fetchMessages(); // 刷新整个列表以显示最新状态
-            } catch (error) {
-                alert(`错误: ${error.message}`);
-            }
-        }
-
-        /**
-         * 删除工单
-         */
-        async function deleteMessage(id) {
-            if (!confirm('确定要永久删除这条工单吗？此操作无法撤销。')) return;
-            
-            const token = localStorage.getItem('adminAuthToken');
-            try {
-                const response = await fetch(`/api/admin/messages/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}` // **核心改动**
-                    }
-                });
+                const response = await fetch(`/api/admin/messages/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${adminToken}` } });
                 if (!response.ok) throw new Error('删除失败');
-                
-                const rowToRemove = document.getElementById(`message-${id}`);
-                if(rowToRemove) rowToRemove.remove();
+                document.getElementById(`ticket-${id}`).remove();
                 alert('删除成功！');
-
-            } catch (error) {
-                alert(`错误: ${error.message}`);
-            }
+            } catch (error) { alert(`错误: ${error.message}`); }
         }
-        
-        /**
-         * 安全退出，清除Token并跳转到首页
-         */
+
+        // --- 商城订单功能 ---
+        async function fetchOrders() {
+            const container = document.getElementById('ordersContainer');
+            const loading = document.getElementById('loadingIndicator');
+            loading.style.display = 'block';
+            container.innerHTML = '';
+            
+            try {
+                const response = await fetch('/api/admin/purchases', { headers: { 'Authorization': `Bearer ${adminToken}` } });
+                if (response.status === 401 || response.status === 403) { logout(); return; }
+                const orders = await response.json();
+
+                if (orders.length === 0) { container.innerHTML = '<tr><td colspan="7" style="text-align:center;">暂无订单记录。</td></tr>'; } 
+                else {
+                    container.innerHTML = orders.map(p => `
+                        <tr id="order-${p.id}">
+                            <td>${p.id}</td>
+                            <td>${p.players ? escapeHTML(p.players.player_name) : 'N/A'}</td>
+                            <td>${escapeHTML(p.item_name)}</td>
+                            <td>${p.price_paid}</td>
+                            <td>${new Date(p.purchase_date).toLocaleString()}</td>
+                            <td class="${p.status === '待处理' ? 'status-pending' : 'status-completed'}">${escapeHTML(p.status)}</td>
+                            <td>${p.status === '待处理' ? `<button class="action-buttons action-btn-complete" onclick="updateOrderStatus(${p.id})">标记为已发货</button>` : '无需操作'}</td>
+                        </tr>`).join('');
+                }
+            } catch (error) { container.innerHTML = `<tr><td colspan="7" style="color:red;">加载失败: ${error.message}</td></tr>`; } 
+            finally { loading.style.display = 'none'; }
+        }
+
+        async function updateOrderStatus(id) {
+            try {
+                const response = await fetch(`/api/admin/purchases/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+                    body: JSON.stringify({ status: '已发货' })
+                });
+                if (!response.ok) throw new Error('更新失败');
+                alert('操作成功！');
+                fetchOrders(); // 重新加载列表
+            } catch (error) { alert(`错误: ${error.message}`); }
+        }
+
+        // --- 通用辅助函数 ---
         function logout() {
-            localStorage.removeItem('adminAuthToken'); // **核心改动**
+            localStorage.removeItem('adminAuthToken');
             alert('已安全退出');
             window.location.href = 'index.html';
         }
 
-        /**
-         * 防止XSS攻击的简单HTML转义函数
-         */
         function escapeHTML(str) {
-            if (typeof str !== 'string') return '';
-            return str.replace(/[&<>"']/g, match => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-            }[match]));
+            if (str === null || str === undefined) return '';
+            return str.toString().replace(/[&<>"']/g, match => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[match]));
         }
     </script>
 </body>
