@@ -43,7 +43,7 @@
         </div>
     </section>
 
-    <!-- 登录逻辑的 JavaScript 代码 -->
+   
    <script>
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -70,16 +70,16 @@
                 throw new Error(result.error || '登录失败');
             }
             
-            // 登录成功，将 Token 存入本地存储
+      
             localStorage.setItem('playerAuthToken', result.token);
-            // 也可以把用户信息存起来
+         
             localStorage.setItem('playerInfo', JSON.stringify(result.user));
 
             messageDiv.textContent = '登录成功！欢迎回来，' + result.user.username;
             messageDiv.style.color = '#2ecc71';
             
             setTimeout(() => {
-                window.location.href = 'index.html'; // 登录后跳转到首页
+                window.location.href = 'index.html'; 
             }, 1500);
 
         } catch (error) {

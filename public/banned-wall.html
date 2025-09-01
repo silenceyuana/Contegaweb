@@ -225,7 +225,7 @@
         </nav>
     </header>
 
-    <!-- 封禁墙区域 -->
+
     <section class="banned-wall" style="padding-top: 80px;">
         <div class="container">
             <div class="banned-header">
@@ -233,7 +233,7 @@
                 <p>当前被封禁的玩家列表 - 公开可见</p>
             </div>
 
-            <!-- 封禁统计 -->
+     
             <div class="banned-stats">
                 <div class="stat-card">
                     <div class="stat-number">8</div>
@@ -253,7 +253,7 @@
                 </div>
             </div>
 
-            <!-- 管理员面板（仅登录后显示） -->
+      
             <div id="adminPanel" class="admin-panel" style="display: none;">
                 <h3><i class="fas fa-cog"></i> 管理员操作面板</h3>
                 <form id="addBanForm" class="admin-form">
@@ -277,7 +277,6 @@
                 </form>
             </div>
 
-            <!-- 封禁列表 -->
             <div class="banned-list">
                 <div class="banned-item banned-item-header">
                     <div>#</div>
@@ -310,15 +309,14 @@
                     </div>
                 </div>
                 
-                <!-- 更多封禁条目... -->
+        
             </div>
 
-            <!-- 登录提示 -->
             <div id="loginPrompt" class="login-prompt">
                 <p>管理员可 <a href="admin-login.html" class="login-link">登录</a> 管理封禁列表</p>
             </div>
 
-            <!-- 管理员操作区域 -->
+        
             <div id="adminActions" class="admin-actions" style="display: none;">
                 <p style="color: #bdc3c7; margin-bottom: 15px;">
                     登录管理员: <strong style="color: #2ecc71;" id="adminName"></strong>
@@ -332,13 +330,13 @@
 
     <script>
     const adminToken = localStorage.getItem('adminAuthToken');
-    const isAdmin = !!adminToken; // 如果token存在，则认为是管理员
+    const isAdmin = !!adminToken; 
 
     document.addEventListener('DOMContentLoaded', function() {
         renderBans();
         toggleAdminFeatures();
         
-        // 设置日期输入框默认为今天
+
         const banDateInput = document.getElementById('banDate');
         if (banDateInput) {
             banDateInput.value = new Date().toISOString().split('T')[0];
@@ -350,9 +348,7 @@
         }
     });
 
-    /**
-     * 根据登录状态显示或隐藏管理员功能
-     */
+
     function toggleAdminFeatures() {
         const adminPanel = document.getElementById('adminPanel');
         const adminActions = document.getElementById('adminActions');
@@ -363,38 +359,38 @@
             if (adminActions) adminActions.style.display = 'block';
             if (loginPrompt) loginPrompt.style.display = 'none';
 
-            // 显示管理员操作列的表头
+    
             const actionHeader = document.getElementById('admin-action-header');
             if(actionHeader) actionHeader.style.display = 'block';
 
         } else {
-            // 对非管理员隐藏所有管理功能
+
             if (adminPanel) adminPanel.style.display = 'none';
             if (adminActions) adminActions.style.display = 'none';
             if (loginPrompt) loginPrompt.style.display = 'block';
         }
     }
 
-    /**
-     * 从后端API获取并渲染封禁列表
-     */
+ 
+
+
     async function renderBans() {
         const container = document.getElementById('banned-list-container');
         if (!container) return;
 
         try {
-            const response = await fetch('/api/bans'); // 调用公共API
+            const response = await fetch('/api/bans'); 
             if (!response.ok) throw new Error('获取数据失败');
             const bans = await response.json();
 
-            container.innerHTML = ''; // 清空加载提示
+            container.innerHTML = '';
 
             if (bans.length === 0) {
                 container.innerHTML = '<p style="text-align: center; padding: 20px;">当前没有封禁记录。</p>';
                 return;
             }
             
-            // 更新统计数据
+           
             updateStats(bans);
 
             bans.forEach((ban, index) => {
@@ -408,7 +404,7 @@
                     <div class="ban-duration">${escapeHTML(ban.duration)}</div>
                 `;
 
-                // 如果是管理员，添加删除按钮
+              
                 if (isAdmin) {
                     const adminActionDiv = document.createElement('div');
                     adminActionDiv.className = 'admin-action';
@@ -424,9 +420,7 @@
         }
     }
 
-    /**
-     * 处理添加封禁的表单提交
-     */
+
     async function handleAddBan(e) {
         e.preventDefault();
         if (!isAdmin) {
@@ -449,7 +443,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${adminToken}` // **关键：使用真Token**
+                    'Authorization': `Bearer ${adminToken}` 
                 },
                 body: JSON.stringify({
                     player_name: playerName,
@@ -465,17 +459,15 @@
             }
 
             alert('添加封禁成功！');
-            this.reset(); // 清空表单
-            renderBans(); // 重新加载列表
+            this.reset(); 
+            renderBans(); 
 
         } catch (error) {
             alert(`错误: ${error.message}`);
         }
     }
 
-    /**
-     * 删除一个封禁记录
-     */
+ 
     async function removeBan(id) {
         if (!isAdmin) {
             alert('您没有权限执行此操作！');
@@ -487,7 +479,7 @@
             const response = await fetch(`/api/admin/bans/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${adminToken}` // **关键：使用真Token**
+                    'Authorization': `Bearer ${adminToken}`
                 }
             });
 
@@ -497,25 +489,23 @@
             }
 
             alert('删除成功！');
-            renderBans(); // 重新加载列表
+            renderBans(); 
 
         } catch (error) {
             alert(`错误: ${error.message}`);
         }
     }
 
-    /**
-     * 退出登录 (使用你真正的管理员Token)
-     */
+
     function logout() {
         localStorage.removeItem('adminAuthToken');
         alert('已安全退出');
-        window.location.reload(); // 刷新页面
+        window.location.reload(); 
     }
     
-    // (省略 updateStats 和 escapeHTML 函数，你可以从旧代码中复制过来，或保持现状)
+
     function escapeHTML(str) { return str.toString().replace(/[&<>"']/g, match => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[match])); }
-    function updateStats(bans) { /* ... 你的统计逻辑 ... */ }
+    function updateStats(bans) {  }
 
 </script>
 </body>

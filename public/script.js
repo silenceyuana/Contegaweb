@@ -1,23 +1,17 @@
-// =================================================================
-// script.js - 最终完整版 v3.0 (已添加签到功能)
-// =================================================================
 
-// --- 全局变量 ---
 const PLAYER_AUTH_TOKEN = localStorage.getItem('playerAuthToken');
 const ADMIN_AUTH_TOKEN = localStorage.getItem('adminAuthToken');
 const IS_PLAYER_LOGGED_IN = !!PLAYER_AUTH_TOKEN;
 let IS_ADMIN_LOGGED_IN = !!ADMIN_AUTH_TOKEN;
 
-// --- 主程序入口 ---
+
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. 初始化所有与登录状态无关的基础UI
+ 
     initializeBaseUI();
     initializeAnimations();
 
-    // 2. 加载所有公共内容
     loadAllContent();
 
-    // 3. 根据登录状态更新UI和初始化特定模块
     updateNavbar();
     updateContactFormUI();
     if (IS_PLAYER_LOGGED_IN) {
@@ -28,11 +22,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-/**
- * 初始化所有基础UI事件监听器
- */
+
+
+
 function initializeBaseUI() {
-    // 移动端导航菜单切换
+
     const menuToggle = document.querySelector('.menu-toggle');
     const navMenu = document.querySelector('.nav-menu');
     if (menuToggle && navMenu) {
@@ -41,26 +35,24 @@ function initializeBaseUI() {
             menuToggle.classList.toggle('active');
         });
     }
-    // 平滑滚动到锚点
+
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
             document.querySelector(this.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
         });
     });
-    // 滚动时添加导航栏阴影
+
     window.addEventListener('scroll', () => {
         const header = document.querySelector('header');
         if (header) header.style.boxShadow = window.scrollY > 50 ? '0 2px 20px rgba(0, 0, 0, 0.3)' : 'none';
     });
-    // 服务器状态检查
+
     checkServerStatus();
     setInterval(checkServerStatus, 60000);
 }
 
-/**
- * 初始化页面滚动动画
- */
+
 function initializeAnimations() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -77,31 +69,25 @@ function initializeAnimations() {
     animatedElements.forEach(el => observer.observe(el));
 }
 
-/**
- * 【新增】初始化所有需要玩家登录后才能看到或使用的模块
- */
+
 function initializePlayerModules() {
     const checkinModule = document.getElementById('checkin-module');
     if (checkinModule) {
-        checkinModule.style.display = 'block'; // 显示模块
-        fetchPlayerStatus(); // 获取初始状态
+        checkinModule.style.display = 'block'; 
+        fetchPlayerStatus(); 
         document.getElementById('checkin-btn')?.addEventListener('click', handleCheckin);
     }
 }
 
-/**
- * 加载所有需要动态渲染的内容
- */
+
 async function loadAllContent() {
     await renderRules();
     await renderCommands();
 }
 
-// =================================================================
-// 模块功能函数 (按功能分组)
-// =================================================================
 
-// --- 服务器状态 ---
+
+
 async function checkServerStatus() {
     const statusContainer = document.querySelector('.server-status');
     const statusText = document.querySelector('.status-text');
@@ -122,7 +108,7 @@ async function checkServerStatus() {
     } catch (error) { console.error('检查服务器状态失败:', error); }
 }
 
-// --- 认证与导航栏 ---
+
 function updateNavbar() {
     const authContainer = document.getElementById('auth-container');
     const playerInfo = localStorage.getItem('playerInfo');
@@ -141,7 +127,7 @@ function logout() {
     window.location.reload();
 }
 
-// --- 【新增】签到系统 ---
+
 async function fetchPlayerStatus() {
     const scoreDisplay = document.getElementById('player-score-display');
     const checkinBtn = document.getElementById('checkin-btn');
@@ -190,7 +176,7 @@ async function handleCheckin() {
     }
 }
 
-// --- 工单系统 ---
+
 function updateContactFormUI() {
     const contactForm = document.getElementById('contactForm');
     if (!contactForm) return;

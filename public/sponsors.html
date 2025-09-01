@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* 针对此页面的特定样式微调 */
+    
         .sponsors-page {
             padding: 120px 0 60px;
             min-height: 100vh;
@@ -60,7 +60,7 @@
         
         .sponsors-header-row {
             display: grid;
-            grid-template-columns: 60px 1fr 100px; /* 默认三列 */
+            grid-template-columns: 60px 1fr 100px; 
             gap: 20px;
             padding: 15px;
             font-weight: bold;
@@ -72,7 +72,7 @@
         
         .sponsor-item {
             display: grid;
-            grid-template-columns: 60px 1fr 100px; /* 默认三列 */
+            grid-template-columns: 60px 1fr 100px;
             gap: 20px;
             padding: 15px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -86,10 +86,10 @@
         .sponsor-name { color: #fff; font-weight: 500; }
         .sponsor-amount { color: #2ecc71; font-weight: bold; text-align: right; }
 
-        /* 管理员视图下的特殊布局 */
+        
         body.admin-view .sponsors-header-row,
         body.admin-view .sponsor-item {
-            grid-template-columns: 60px 1fr 100px 100px; /* 管理员视图下变为四列 */
+            grid-template-columns: 60px 1fr 100px 100px; 
         }
         
         .admin-action { text-align: right; }
@@ -116,7 +116,7 @@
     </style>
 </head>
 <body>
-    <!-- 导航栏 -->
+   
     <header>
         <nav class="navbar">
             <div class="nav-container">
@@ -134,7 +134,7 @@
         </nav>
     </header>
 
-    <!-- 赞助页面内容 -->
+    
     <main class="sponsors-page">
         <div class="container">
             <div class="sponsors-header">
@@ -142,7 +142,7 @@
                 <p>感谢所有赞助者！你们的支持是服务器前进的最大动力！</p>
             </div>
 
-            <!-- 管理员面板（仅登录后显示） -->
+           
             <div id="adminPanel" class="admin-panel" style="display: none;">
                 <h3><i class="fas fa-cog"></i> 管理员操作面板</h3>
                 <form id="addSponsorForm" class="admin-form">
@@ -158,13 +158,13 @@
                 </form>
             </div>
 
-            <!-- 赞助者列表 -->
+            
             <div class="sponsors-list">
                 <div class="sponsors-header-row" id="sponsors-header-row">
                     <div>#</div>
                     <div>赞助者名单</div>
                     <div style="text-align:right;">金额</div>
-                    <!-- 管理员操作列的表头将由JS动态添加 -->
+                   
                 </div>
                 <div id="sponsorsContainer">
                     <div class="sponsor-item" style="grid-column: 1 / -1; text-align: center;">
@@ -173,12 +173,12 @@
                 </div>
             </div>
 
-            <!-- 登录提示 -->
+           
             <div id="loginPrompt" class="login-prompt">
                 <p>管理员可 <a href="admin-login.html" class="login-link">登录</a> 以管理赞助名单</p>
             </div>
 
-            <!-- 管理员操作区域 -->
+           
             <div id="adminActions" class="admin-actions" style="display: none;">
                 <p style="color: #bdc3c7; margin-bottom: 15px;">
                     已登录为管理员

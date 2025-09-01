@@ -15,7 +15,7 @@
         .admin-info { text-align: center; margin-bottom: 1.5rem; }
         .logout-btn { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
 
-        /* --- 【新增】标签页样式 --- */
+       
         .dashboard-tabs {
             display: flex;
             justify-content: center;
@@ -45,7 +45,7 @@
             height: 2px;
             background-color: #4CAF50;
         }
-        /* --- 结束新增样式 --- */
+       
         
         .message-table { width: 100%; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; border-collapse: collapse; }
         .message-table th, .message-table td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
@@ -54,7 +54,7 @@
         .btn-delete { border-color: #e74c3c; color: #e74c3c; }
         .btn-delete:hover { background: #e74c3c; color: #fff; }
 
-        /* --- 【新增】订单状态样式 --- */
+        
         .status-pending { color: #f39c12; font-weight: bold; }
         .status-completed { color: #2ecc71; }
         .action-btn-complete { background: #3498db; color: white; }
@@ -83,7 +83,7 @@
             
             <div class="admin-info"><button class="logout-btn" onclick="logout()">安全退出</button></div>
 
-            <!-- 工单视图 -->
+            
             <div id="tickets-view">
                 <table class="message-table">
                     <thead><tr><th>提交时间</th><th>玩家名称</th><th>邮箱</th><th>消息内容</th><th>操作</th></tr></thead>
@@ -91,7 +91,7 @@
                 </table>
             </div>
 
-            <!-- 商城订单视图 (默认隐藏) -->
+          
             <div id="orders-view" style="display: none;">
                 <table class="message-table">
                     <thead><tr><th>订单ID</th><th>玩家</th><th>商品</th><th>价格</th><th>购买时间</th><th>状态</th><th>操作</th></tr></thead>
@@ -104,7 +104,7 @@
     </main>
 
     <script>
-        // --- 核心安全检查 ---
+  
         const adminToken = localStorage.getItem('adminAuthToken');
         document.addEventListener('DOMContentLoaded', function() {
             if (!adminToken) {
@@ -112,11 +112,11 @@
                 window.location.href = 'admin-login.html';
                 return;
             }
-            // 默认加载工单
+      
             fetchTickets();
         });
 
-        // --- 标签页切换逻辑 ---
+       
         function switchTab(tabName, element) {
             document.getElementById('tickets-view').style.display = 'none';
             document.getElementById('orders-view').style.display = 'none';
@@ -134,7 +134,7 @@
             }
         }
 
-        // --- 工单功能 ---
+
         async function fetchTickets() {
             const container = document.getElementById('ticketsContainer');
             const loading = document.getElementById('loadingIndicator');
@@ -171,7 +171,7 @@
             } catch (error) { alert(`错误: ${error.message}`); }
         }
 
-        // --- 商城订单功能 ---
+
         async function fetchOrders() {
             const container = document.getElementById('ordersContainer');
             const loading = document.getElementById('loadingIndicator');
@@ -209,11 +209,11 @@
                 });
                 if (!response.ok) throw new Error('更新失败');
                 alert('操作成功！');
-                fetchOrders(); // 重新加载列表
+                fetchOrders(); 
             } catch (error) { alert(`错误: ${error.message}`); }
         }
 
-        // --- 通用辅助函数 ---
+
         function logout() {
             localStorage.removeItem('adminAuthToken');
             alert('已安全退出');
