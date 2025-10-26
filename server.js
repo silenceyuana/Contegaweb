@@ -1,10 +1,10 @@
 // =================================================================
-// server.js - v8.2 (集成 Resend 邮件验证 - 简体中文最终版)
+// server.js - v8.3 (最终版 - 优化 Resend 错误处理)
 // =================================================================
 // 关键特性:
 // 1. 完整的玩家与管理员认证流程。
-// 2. 使用 Resend API 实现两步注册邮件验证，确保高送达率。
-// 3. 仿 Spotify 风格的精美 HTML 邮件模板，已完全中文化和品牌化。
+// 2. 使用 Resend API 实现两步注册邮件验证。
+// 3. 增强了邮件发送的错误捕获逻辑，确保问题能被记录。
 // 4. 安全的工单、封禁墙和赞助名单 API。
 // 5. 为 Vercel 无服务器环境正确配置。
 // =================================================================
@@ -16,7 +16,7 @@ const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Resend } = require('resend'); // 引入 Resend
+const { Resend } = require('resend');
 
 // --- 2. Supabase & 环境变量 ---
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -26,7 +26,7 @@ const resendApiKey = process.env.RESEND_API_KEY;
 
 // 关键检查
 if (!supabaseUrl || !supabaseAnonKey || !jwtSecret || !resendApiKey) {
-    console.error("严重错误：缺少一个或多个关键环境变量。请确保 SUPABASE_URL, SUPABASE_ANON_KEY, JWT_SECRET, 和 RESEND_API_KEY 已正确设置。");
+    console.error("严重错误：缺少一个或多个关键环境变量。");
     process.exit(1);
 }
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -95,7 +95,6 @@ app.post('/api/register', async (req, res) => {
             { onConflict: 'email' }
         );
 
-        // --- Eulark 品牌化 & 简体中文 HTML 邮件模板 ---
         const emailHtml = `
             <div style="font-family: Arial, 'Microsoft YaHei', sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                 <div style="text-align: center; margin-bottom: 20px;">
@@ -118,19 +117,21 @@ app.post('/api/register', async (req, res) => {
             </div>
         `;
 
-        // 使用 Resend 发送邮件
-        await resend.emails.send({
-            // !!! 重要：请修改为您在 Resend 验证过的域名邮箱
-            from: 'Eulark 服务器 <message@betteryuan.cn>', 
+        const { data, error } = await resend.emails.send({
+            from: 'Eulark 服务器 <message@betteryuan.cn>', // !!! 确保这里的域名已在 Resend 验证
             to: email,
             subject: '您的 Eulark 服务器验证码',
             html: emailHtml,
         });
 
+        if (error) {
+            throw error;
+        }
+
         res.status(200).json({ message: '验证邮件已发送，请检查您的收件箱。' });
 
     } catch (err) {
-        console.error('注册错误:', err);
+        console.error('注册错误:', err); 
         res.status(500).json({ error: '服务器内部错误，发送邮件失败。' });
     }
 });
@@ -154,7 +155,6 @@ app.post('/api/verify-email', async (req, res) => {
         }
 
         if (new Date(pending.expires_at) < new Date()) {
-            // 在验证前主动清理一次过期的记录
             await supabase.from('pending_verifications').delete().eq('email', email);
             return res.status(400).json({ error: '验证码已过期，请重新注册。' });
         }
@@ -174,7 +174,6 @@ app.post('/api/verify-email', async (req, res) => {
             .single();
 
         if (insertError) {
-            // 如果插入失败（例如，在验证期间有其他人用同名注册了），返回冲突错误
             if (insertError.code === '23505') {
                  return res.status(409).json({ error: '玩家名或邮箱已被注册' });
             }
@@ -191,11 +190,56 @@ app.post('/api/verify-email', async (req, res) => {
     }
 });
 
-app.post('/api/login', async (req, res) => { const { identifier, password } = req.body; if (!identifier || !password) return res.status(400).json({ error: '玩家名/邮箱和密码不能为空' }); try { const { data: player, error } = await supabase.from('players').select('id, player_name, password_hash').or(`player_name.eq.${identifier},email.eq.${identifier}`).single(); if (error || !player) return res.status(401).json({ error: '凭据无效' }); const isMatch = await bcrypt.compare(password, player.password_hash); if (!isMatch) return res.status(401).json({ error: '凭据无效' }); const payload = { id: player.id, player_name: player.player_name }; const token = jwt.sign(payload, jwtSecret, { expiresIn: '1d' }); res.json({ message: '登录成功', token, user: { id: player.id, username: player.player_name } }); } catch (err) { console.error('登录错误:', err); res.status(500).json({ error: '服务器内部错误' }); } });
-app.post('/api/admin/login', async (req, res) => { const { username, password } = req.body; if (!username || !password) return res.status(400).json({ error: '用户名和密码不能为空' }); try { const { data: user, error } = await supabase.from('users').select('id, username, password_hash').eq('username', username).single(); if (error || !user) return res.status(401).json({ error: '用户名或密码错误' }); const isMatch = await bcrypt.compare(password, user.password_hash); if (!isMatch) return res.status(401).json({ error: '用户名或密码错误' }); const payload = { id: user.id, username: user.username, isAdmin: true }; const token = jwt.sign(payload, jwtSecret, { expiresIn: '8h' }); res.json({ message: '登录成功', token }); } catch (err) { console.error('管理员登录错误:', err); res.status(500).json({ error: '服务器内部错误' }); } });
+app.post('/api/login', async (req, res) => { 
+    const { identifier, password } = req.body; 
+    if (!identifier || !password) return res.status(400).json({ error: '玩家名/邮箱和密码不能为空' }); 
+    try { 
+        const { data: player, error } = await supabase.from('players').select('id, player_name, password_hash').or(`player_name.eq.${identifier},email.eq.${identifier}`).single(); 
+        if (error || !player) return res.status(401).json({ error: '凭据无效' }); 
+        const isMatch = await bcrypt.compare(password, player.password_hash); 
+        if (!isMatch) return res.status(401).json({ error: '凭据无效' }); 
+        const payload = { id: player.id, player_name: player.player_name }; 
+        const token = jwt.sign(payload, jwtSecret, { expiresIn: '1d' }); 
+        res.json({ message: '登录成功', token, user: { id: player.id, username: player.player_name } }); 
+    } catch (err) { 
+        console.error('登录错误:', err); 
+        res.status(500).json({ error: '服务器内部错误' }); 
+    } 
+});
+
+app.post('/api/admin/login', async (req, res) => { 
+    const { username, password } = req.body; 
+    if (!username || !password) return res.status(400).json({ error: '用户名和密码不能为空' }); 
+    try { 
+        const { data: user, error } = await supabase.from('users').select('id, username, password_hash').eq('username', username).single(); 
+        if (error || !user) return res.status(401).json({ error: '用户名或密码错误' }); 
+        const isMatch = await bcrypt.compare(password, user.password_hash); 
+        if (!isMatch) return res.status(401).json({ error: '用户名或密码错误' }); 
+        const payload = { id: user.id, username: user.username, isAdmin: true }; 
+        const token = jwt.sign(payload, jwtSecret, { expiresIn: '8h' }); 
+        res.json({ message: '登录成功', token }); 
+    } catch (err) { 
+        console.error('管理员登录错误:', err); 
+        res.status(500).json({ error: '服务器内部错误' }); 
+    } 
+});
 
 // --- 10. 受保护的玩家 API ---
-app.post('/api/contact', verifyToken, async (req, res) => { const { message } = req.body; const { id: playerId, player_name } = req.user; if (!message) return res.status(400).json({ error: '消息内容不能为空' }); try { const { data: playerData, error: playerError } = await supabase.from('players').select('email').eq('id', playerId).single(); if (playerError || !playerData) throw new Error('无法找到关联的用户信息'); const { data, error } = await supabase.from('contact_messages').insert([{ player_name, email: playerData.email, message }]).select(); if (error) throw error; res.status(201).json({ message: '消息发送成功', data: data[0] }); } catch (error) { console.error('提交工单错误:', error); res.status(500).json({ error: '服务器内部错误，提交失败' }); } });
+app.post('/api/contact', verifyToken, async (req, res) => { 
+    const { message } = req.body; 
+    const { id: playerId, player_name } = req.user; 
+    if (!message) return res.status(400).json({ error: '消息内容不能为空' }); 
+    try { 
+        const { data: playerData, error: playerError } = await supabase.from('players').select('email').eq('id', playerId).single(); 
+        if (playerError || !playerData) throw new Error('无法找到关联的用户信息'); 
+        const { data, error } = await supabase.from('contact_messages').insert([{ player_name, email: playerData.email, message }]).select(); 
+        if (error) throw error; 
+        res.status(201).json({ message: '消息发送成功', data: data[0] }); 
+    } catch (error) { 
+        console.error('提交工单错误:', error); 
+        res.status(500).json({ error: '服务器内部错误，提交失败' }); 
+    } 
+});
 
 // --- 11. 受保护的管理员 API ---
 app.get('/api/admin/messages', verifyToken, async (req, res) => { try { const { data, error } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false }); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
