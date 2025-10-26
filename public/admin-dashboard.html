@@ -8,94 +8,34 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: #1e272e; }
         .dashboard { padding: 100px 20px 40px; }
-        .dashboard-header { text-align: center; margin-bottom: 2rem; color: #fff; }
-        .dashboard-header h1 { color: #4CAF50; }
+        .dashboard-header { text-align: center; margin-bottom: 2rem; }
         .admin-info { text-align: center; margin-bottom: 1.5rem; }
         .logout-btn { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-
-       
-        .dashboard-tabs {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-        }
-        .tab-btn {
-            background: none;
-            border: none;
-            color: #bdc3c7;
-            padding: 15px 25px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            position: relative;
-            transition: color 0.3s ease;
-        }
-        .tab-btn.active {
-            color: #4CAF50;
-            font-weight: bold;
-        }
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background-color: #4CAF50;
-        }
-       
-        
-        .message-table { width: 100%; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; border-collapse: collapse; }
-        .message-table th, .message-table td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-        .message-table th { background: rgba(76, 175, 80, 0.2); }
-        .action-buttons button { background: none; border: 1px solid #fff; color: #fff; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .message-table { width: 100%; border-radius: 10px; overflow: hidden; border-collapse: collapse; }
+        .message-table th, .message-table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .action-buttons button { background: none; border: 1px solid var(--text-color); color: var(--text-color); padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         .btn-delete { border-color: #e74c3c; color: #e74c3c; }
         .btn-delete:hover { background: #e74c3c; color: #fff; }
-
-        
-        .status-pending { color: #f39c12; font-weight: bold; }
-        .status-completed { color: #2ecc71; }
-        .action-btn-complete { background: #3498db; color: white; }
     </style>
 </head>
 <body>
     <header>
-        <nav class="navbar">
-            <div class="nav-container">
-                <div class="nav-logo"><a href="index.html"><i class="fas fa-cube"></i><span> 筑界物语服务器</span></a></div>
-                <ul class="nav-menu"><li class="nav-item"><a href="index.html" class="nav-link">返回首页</a></li></ul>
-            </div>
-        </nav>
+        <nav class="navbar"><div class="nav-container"><div class="nav-logo"><a href="index.html"><i class="fas fa-atom"></i><span> Eulark 生电服务器</span></a></div><ul class="nav-menu"><li class="nav-item"><a href="index.html" class="nav-link">返回首页</a></li></ul></div></nav>
     </header>
 
     <main class="dashboard">
         <div class="container">
             <div class="dashboard-header">
-                <h1 id="dashboard-title"><i class="fas fa-tachometer-alt"></i> 管理员后台</h1>
-            </div>
-
-            <div class="dashboard-tabs">
-                <button class="tab-btn active" onclick="switchTab('tickets', this)"><i class="fas fa-envelope-open-text"></i> 工单管理</button>
-                <button class="tab-btn" onclick="switchTab('orders', this)"><i class="fas fa-shopping-cart"></i> 商城订单</button>
+                <h1 id="dashboard-title"><i class="fas fa-envelope-open-text"></i> 工单管理</h1>
             </div>
             
             <div class="admin-info"><button class="logout-btn" onclick="logout()">安全退出</button></div>
 
-            
             <div id="tickets-view">
                 <table class="message-table">
                     <thead><tr><th>提交时间</th><th>玩家名称</th><th>邮箱</th><th>消息内容</th><th>操作</th></tr></thead>
                     <tbody id="ticketsContainer"></tbody>
-                </table>
-            </div>
-
-          
-            <div id="orders-view" style="display: none;">
-                <table class="message-table">
-                    <thead><tr><th>订单ID</th><th>玩家</th><th>商品</th><th>价格</th><th>购买时间</th><th>状态</th><th>操作</th></tr></thead>
-                    <tbody id="ordersContainer"></tbody>
                 </table>
             </div>
 
@@ -104,7 +44,6 @@
     </main>
 
     <script>
-  
         const adminToken = localStorage.getItem('adminAuthToken');
         document.addEventListener('DOMContentLoaded', function() {
             if (!adminToken) {
@@ -112,42 +51,22 @@
                 window.location.href = 'admin-login.html';
                 return;
             }
-      
             fetchTickets();
         });
-
-       
-        function switchTab(tabName, element) {
-            document.getElementById('tickets-view').style.display = 'none';
-            document.getElementById('orders-view').style.display = 'none';
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            
-            document.getElementById(`${tabName}-view`).style.display = 'block';
-            element.classList.add('active');
-
-            if (tabName === 'tickets') {
-                document.getElementById('dashboard-title').innerHTML = '<i class="fas fa-envelope-open-text"></i> 工单管理';
-                fetchTickets();
-            } else if (tabName === 'orders') {
-                document.getElementById('dashboard-title').innerHTML = '<i class="fas fa-shopping-cart"></i> 商城订单管理';
-                fetchOrders();
-            }
-        }
-
 
         async function fetchTickets() {
             const container = document.getElementById('ticketsContainer');
             const loading = document.getElementById('loadingIndicator');
             loading.style.display = 'block';
             container.innerHTML = '';
-
             try {
                 const response = await fetch('/api/admin/messages', { headers: { 'Authorization': `Bearer ${adminToken}` } });
                 if (response.status === 401 || response.status === 403) { logout(); return; }
                 const tickets = await response.json();
                 
-                if (tickets.length === 0) { container.innerHTML = '<tr><td colspan="5" style="text-align:center;">没有待处理的工单。</td></tr>'; } 
-                else {
+                if (tickets.length === 0) {
+                    container.innerHTML = '<tr><td colspan="5" style="text-align:center;">没有待处理的工单。</td></tr>';
+                } else {
                     container.innerHTML = tickets.map(msg => `
                         <tr id="ticket-${msg.id}">
                             <td>${new Date(msg.created_at).toLocaleString('zh-CN')}</td>
@@ -157,8 +76,11 @@
                             <td class="action-buttons"><button class="btn-delete" onclick="deleteTicket(${msg.id})">删除</button></td>
                         </tr>`).join('');
                 }
-            } catch (error) { container.innerHTML = `<tr><td colspan="5" style="color:red;">加载失败: ${error.message}</td></tr>`; } 
-            finally { loading.style.display = 'none'; }
+            } catch (error) {
+                container.innerHTML = `<tr><td colspan="5" style="color:red;">加载失败: ${error.message}</td></tr>`;
+            } finally {
+                loading.style.display = 'none';
+            }
         }
 
         async function deleteTicket(id) {
@@ -168,51 +90,10 @@
                 if (!response.ok) throw new Error('删除失败');
                 document.getElementById(`ticket-${id}`).remove();
                 alert('删除成功！');
-            } catch (error) { alert(`错误: ${error.message}`); }
+            } catch (error) {
+                alert(`错误: ${error.message}`);
+            }
         }
-
-
-        async function fetchOrders() {
-            const container = document.getElementById('ordersContainer');
-            const loading = document.getElementById('loadingIndicator');
-            loading.style.display = 'block';
-            container.innerHTML = '';
-            
-            try {
-                const response = await fetch('/api/admin/purchases', { headers: { 'Authorization': `Bearer ${adminToken}` } });
-                if (response.status === 401 || response.status === 403) { logout(); return; }
-                const orders = await response.json();
-
-                if (orders.length === 0) { container.innerHTML = '<tr><td colspan="7" style="text-align:center;">暂无订单记录。</td></tr>'; } 
-                else {
-                    container.innerHTML = orders.map(p => `
-                        <tr id="order-${p.id}">
-                            <td>${p.id}</td>
-                            <td>${p.players ? escapeHTML(p.players.player_name) : 'N/A'}</td>
-                            <td>${escapeHTML(p.item_name)}</td>
-                            <td>${p.price_paid}</td>
-                            <td>${new Date(p.purchase_date).toLocaleString()}</td>
-                            <td class="${p.status === '待处理' ? 'status-pending' : 'status-completed'}">${escapeHTML(p.status)}</td>
-                            <td>${p.status === '待处理' ? `<button class="action-buttons action-btn-complete" onclick="updateOrderStatus(${p.id})">标记为已发货</button>` : '无需操作'}</td>
-                        </tr>`).join('');
-                }
-            } catch (error) { container.innerHTML = `<tr><td colspan="7" style="color:red;">加载失败: ${error.message}</td></tr>`; } 
-            finally { loading.style.display = 'none'; }
-        }
-
-        async function updateOrderStatus(id) {
-            try {
-                const response = await fetch(`/api/admin/purchases/${id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-                    body: JSON.stringify({ status: '已发货' })
-                });
-                if (!response.ok) throw new Error('更新失败');
-                alert('操作成功！');
-                fetchOrders(); 
-            } catch (error) { alert(`错误: ${error.message}`); }
-        }
-
 
         function logout() {
             localStorage.removeItem('adminAuthToken');

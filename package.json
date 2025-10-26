@@ -1,7 +1,9 @@
+
+
 {
-  "name": "minecraft-server-website",
+  "name": "eulark-tech-server-website",
   "version": "1.0.0",
-  "description": "筑界物语Minecraft服务器官方网站，由Express和Supabase驱动",
+  "description": "Eulark生电服务器官方网站",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -12,11 +14,13 @@
     "minecraft",
     "server",
     "website",
+    "redstone",
+    "technical",
     "supabase",
     "express",
     "vercel"
   ],
-  "author": "筑界物语服务器团队",
+  "author": "Eulark服务器团队",
   "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
