@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>玩家注册 - 筑界物语服务器</title>
+    <title>玩家注册 - Eulark 生电服务器</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/x-icon" href="images/1.png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -12,7 +12,7 @@
     <header>
         <nav class="navbar">
             <div class="nav-container">
-                <div class="nav-logo"><a href="index.html"><i class="fas fa-cube"></i><span> 筑界物语服务器</span></a></div>
+                <div class="nav-logo"><a href="index.html"><i class="fas fa-atom"></i><span> Eulark 生电服务器</span></a></div>
                 <ul class="nav-menu"><li class="nav-item"><a href="index.html" class="nav-link">返回首页</a></li></ul>
             </div>
         </nav>
@@ -21,74 +21,141 @@
     <section class="admin-login" style="padding-top: 120px; min-height: 100vh;">
         <div class="container">
             <div class="login-container" style="max-width: 450px;">
-                <h2><i class="fas fa-user-plus"></i> 创建玩家账号</h2>
-                <form id="registerForm" class="login-form">
-                    <div class="form-group">
-                        <label for="username"><i class="fas fa-user"></i> 玩家名</label>
-                        <input type="text" id="username" required placeholder="输入您的游戏ID">
-                    </div>
-                    <div class="form-group">
-                        <label for="email"><i class="fas fa-envelope"></i> 邮箱</label>
-                        <input type="email" id="email" required placeholder="用于找回密码等">
-                    </div>
-                    <div class="form-group">
-                        <label for="password"><i class="fas fa-key"></i> 密码</label>
-                        <input type="password" id="password" required placeholder="设置您的登录密码">
-                    </div>
-                    <button type="submit" class="minecraft-btn login-btn">
-                        <i class="fas fa-check"></i> 立即注册
-                    </button>
-                    <div id="formMessage" class="message" style="margin-top: 15px; text-align: center;"></div>
-                    <p style="text-align: center; margin-top: 20px;">
-                        已有账号？ <a href="login.html" style="color: #4CAF50;">点此登录</a>
-                    </p>
-                </form>
+                
+                <!-- 步骤 1: 注册表单 -->
+                <div id="registration-step">
+                    <h2><i class="fas fa-user-plus"></i> 创建玩家账号</h2>
+                    <form id="registerForm" class="login-form">
+                        <div class="form-group">
+                            <label for="username"><i class="fas fa-user"></i> 玩家名</label>
+                            <input type="text" id="username" required placeholder="输入您的游戏ID">
+                        </div>
+                        <div class="form-group">
+                            <label for="email"><i class="fas fa-envelope"></i> 邮箱</label>
+                            <input type="email" id="email" required placeholder="用于接收验证码">
+                        </div>
+                        <div class="form-group">
+                            <label for="password"><i class="fas fa-key"></i> 密码</label>
+                            <input type="password" id="password" required placeholder="设置您的登录密码">
+                        </div>
+                        <button type="submit" class="minecraft-btn">
+                            <i class="fas fa-paper-plane"></i> 发送验证码
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 步骤 2: 验证码表单 (初始隐藏) -->
+                <div id="verification-step" style="display: none;">
+                    <h2><i class="fas fa-shield-alt"></i> 邮箱验证</h2>
+                    <p style="text-align: center; margin-bottom: 1.5rem; color: var(--text-color-secondary);">我们已向您的邮箱发送了一个6位数验证码，请检查并输入。</p>
+                    <form id="verificationForm" class="login-form">
+                        <div class="form-group">
+                            <label for="verificationCode"><i class="fas fa-hashtag"></i> 验证码</label>
+                            <input type="text" id="verificationCode" required placeholder="输入6位数验证码" maxlength="6" pattern="\d{6}" inputmode="numeric">
+                        </div>
+                        <button type="submit" class="minecraft-btn">
+                            <i class="fas fa-check"></i> 完成注册
+                        </button>
+                    </form>
+                </div>
+                
+                <div id="formMessage" class="message" style="margin-top: 15px; text-align: center;"></div>
+                <p style="text-align: center; margin-top: 20px;">
+                    已有账号？ <a href="login.html" style="color: var(--link-color);">点此登录</a>
+                </p>
             </div>
         </div>
     </section>
 
-  
     <script>
-    document.getElementById('registerForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const username = document.getElementById('username').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value;
+        const registerStep = document.getElementById('registration-step');
+        const verificationStep = document.getElementById('verification-step');
+        const registerForm = document.getElementById('registerForm');
+        const verificationForm = document.getElementById('verificationForm');
         const messageDiv = document.getElementById('formMessage');
-        const submitButton = this.querySelector('button[type="submit"]');
-
-        submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在注册...';
-        messageDiv.textContent = '';
         
-        try {
-            const response = await fetch('/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ player_name: username, email, password })
-            });
+        // 用于在两个步骤之间传递用户的邮箱地址
+        let userEmailForVerification = '';
 
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || '注册失败，请稍后再试');
-            }
-
-            messageDiv.textContent = '注册成功！正在跳转到登录页面...';
-            messageDiv.style.color = '#2ecc71';
+        // 处理步骤 1: 提交注册信息，请求发送验证码
+        registerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 2000);
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const submitButton = this.querySelector('button[type="submit"]');
 
-        } catch (error) {
-            messageDiv.textContent = error.message;
-            messageDiv.style.color = '#e74c3c';
-            submitButton.disabled = false;
-            submitButton.innerHTML = '<i class="fas fa-check"></i> 立即注册';
-        }
-    });
-</script>
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在发送...';
+            messageDiv.textContent = '';
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ player_name: username, email, password })
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || '发送验证码失败，请稍后再试。');
+                }
+
+                messageDiv.textContent = '验证码已成功发送至您的邮箱，请查收！';
+                messageDiv.style.color = '#2ecc71';
+                
+                // 存储邮箱，并切换到验证码输入界面
+                userEmailForVerification = email;
+                registerStep.style.display = 'none';
+                verificationStep.style.display = 'block';
+
+            } catch (error) {
+                messageDiv.textContent = error.message;
+                messageDiv.style.color = '#e74c3c';
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> 发送验证码';
+            }
+        });
+
+        // 处理步骤 2: 提交验证码，完成最终注册
+        verificationForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const code = document.getElementById('verificationCode').value.trim();
+            const submitButton = this.querySelector('button[type="submit"]');
+
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在验证...';
+            messageDiv.textContent = '';
+
+            try {
+                const response = await fetch('/api/verify-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: userEmailForVerification, code })
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || '验证失败，请检查验证码是否正确。');
+                }
+                
+                messageDiv.textContent = '注册成功！正在跳转到登录页面...';
+                messageDiv.style.color = '#2ecc71';
+            
+                // 2秒后自动跳转到登录页
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+
+            } catch (error) {
+                messageDiv.textContent = error.message;
+                messageDiv.style.color = '#e74c3c';
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="fas fa-check"></i> 完成注册';
+            }
+        });
+    </script>
 </body>
-</html>
+</html>```

@@ -3,116 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>赞助名单 - 筑界物语服务器</title>
-    <link rel="icon" type="image/x-icon" href="/icon.ico">
+    <title>赞助鸣谢 - Eulark 生电服务器</title>
+    <link rel="icon" type="image/x-icon" href="images/1.png">
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-    
-        .sponsors-page {
-            padding: 120px 0 60px;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        .sponsors-page { padding: 120px 0 60px; min-height: 100vh; }
+        .sponsors-header { text-align: center; margin-bottom: 3rem; }
+        /* 为主标题添加鼠标指针，暗示其可点击，并防止文本被选中 */
+        .sponsors-header h1 { 
+            font-size: 3rem; 
+            color: #ffd700; 
+            margin-bottom: 1rem; 
+            cursor: pointer; 
+            user-select: none; /* 防止快速点击时选中文本 */
+            -webkit-user-select: none; /* 兼容 Safari */
         }
-        
-        .sponsors-header {
-            text-align: center;
-            margin-bottom: 3rem;
-            color: #fff;
-        }
-        
-        .sponsors-header h1 {
-            font-size: 3rem;
-            color: #ffd700;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-        }
-        
-        .sponsors-header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-        
-        .donation-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 3rem;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            text-align: center;
-        }
-        
-        .donation-section h2 {
-            color: #ffd700;
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
-        }
-        
-        .sponsors-list {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 2rem;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 215, 0, 0.2);
-            margin-bottom: 2rem;
-        }
-        
-        .sponsors-header-row {
-            display: grid;
-            grid-template-columns: 60px 1fr 100px; 
-            gap: 20px;
-            padding: 15px;
-            font-weight: bold;
-            color: #ffd700;
-            background: rgba(255, 215, 0, 0.1);
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-        
-        .sponsor-item {
-            display: grid;
-            grid-template-columns: 60px 1fr 100px;
-            gap: 20px;
-            padding: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            align-items: center;
-            transition: background-color 0.3s ease;
-        }
-        
+        .sponsors-header p { font-size: 1.2rem; color: var(--text-color-secondary); }
+        .sponsors-list { background: var(--card-bg-color); border-radius: 15px; padding: 2rem; border: 1px solid var(--border-color); margin-bottom: 2rem; }
+        .sponsors-header-row { display: grid; grid-template-columns: 60px 1fr 100px; gap: 20px; padding: 15px; font-weight: bold; color: #ffd700; background: rgba(255, 215, 0, 0.1); border-radius: 8px; margin-bottom: 1rem; }
+        .sponsor-item { display: grid; grid-template-columns: 60px 1fr 100px; gap: 20px; padding: 15px; border-bottom: 1px solid var(--border-color); align-items: center; transition: background-color 0.3s ease; }
         .sponsor-item:last-child { border-bottom: none; }
-        .sponsor-item:hover { background: rgba(255, 255, 255, 0.1); }
+        .sponsor-item:hover { background: var(--theme-color-faded); }
         .sponsor-number { color: #ffd700; font-weight: bold; text-align: center; }
-        .sponsor-name { color: #fff; font-weight: 500; }
+        .sponsor-name { color: var(--text-color); font-weight: 500; }
         .sponsor-amount { color: #2ecc71; font-weight: bold; text-align: right; }
-
-        
-        body.admin-view .sponsors-header-row,
-        body.admin-view .sponsor-item {
-            grid-template-columns: 60px 1fr 100px 100px; 
-        }
-        
+        body.admin-view .sponsors-header-row, body.admin-view .sponsor-item { grid-template-columns: 60px 1fr 100px 100px; }
         .admin-action { text-align: right; }
-
-        .admin-panel { background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; backdrop-filter: blur(10px); border: 2px solid rgba(46, 204, 113, 0.3); }
-        .admin-panel h3 { color: #2ecc71; margin-bottom: 1.5rem; font-size: 1.5rem; }
+        .admin-panel { background: var(--card-bg-color); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border-color); }
+        .admin-panel h3 { color: var(--theme-color); margin-bottom: 1.5rem; font-size: 1.5rem; }
         .admin-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: end; }
         .form-group { display: flex; flex-direction: column; }
-        .form-group label { color: #bdc3c7; margin-bottom: 8px; font-size: 0.9rem; }
-        .form-group input { padding: 10px 15px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: #fff; font-size: 1rem; }
-        .admin-btn { background: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: background-color 0.3s ease; }
-        .admin-btn:hover { background: #27ae60; }
+        .form-group label { color: var(--text-color-secondary); margin-bottom: 8px; font-size: 0.9rem; }
+        .form-group input { padding: 10px 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--input-bg-color); color: var(--text-color); font-size: 1rem; }
+        .admin-btn { background: var(--theme-color); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: background-color 0.3s ease; }
+        .admin-btn:hover { background: var(--theme-color-dark); }
         .delete-btn { background: #e74c3c; padding: 6px 12px; font-size: 0.9rem; margin-left: 10px; }
         .delete-btn:hover { background: #c0392b; }
-        .login-prompt { text-align: center; color: #bdc3c7; margin: 2rem 0; }
-        .login-link { color: #3498db; text-decoration: none; font-weight: 500; }
-        .login-link:hover { text-decoration: underline; }
         .admin-actions { text-align: center; margin-top: 2rem; }
         .logout-btn { background: #e74c3c; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: background-color 0.3s ease; }
         .logout-btn:hover { background: #c0392b; }
         .back-to-home { text-align: center; margin-top: 3rem; }
-        .back-to-home a { color: #ffd700; text-decoration: none; font-size: 1.1rem; display: inline-flex; align-items: center; gap: 0.5rem; transition: color 0.3s ease; }
-        .back-to-home a:hover { color: #fff; }
     </style>
 </head>
 <body>
@@ -122,13 +53,12 @@
             <div class="nav-container">
                 <div class="nav-logo">
                     <a href="index.html">
-                        <i class="fas fa-cube"></i>
-                        <span>筑界物语服务器</span>
+                        <i class="fas fa-atom"></i>
+                        <span>Eulark 生电服务器</span>
                     </a>
                 </div>
                 <ul class="nav-menu">
                     <li class="nav-item"><a href="index.html" class="nav-link">返回首页</a></li>
-                    <li class="nav-item"><a href="admin-login.html" class="nav-link">管理员登录</a></li>
                 </ul>
             </div>
         </nav>
@@ -138,10 +68,9 @@
     <main class="sponsors-page">
         <div class="container">
             <div class="sponsors-header">
-                <h1><i class="fas fa-hand-holding-heart"></i> 赞助名单</h1>
+                <h1 id="sponsors-main-title"><i class="fas fa-hand-holding-heart"></i> 赞助鸣谢</h1>
                 <p>感谢所有赞助者！你们的支持是服务器前进的最大动力！</p>
             </div>
-
            
             <div id="adminPanel" class="admin-panel" style="display: none;">
                 <h3><i class="fas fa-cog"></i> 管理员操作面板</h3>
@@ -158,13 +87,11 @@
                 </form>
             </div>
 
-            
             <div class="sponsors-list">
                 <div class="sponsors-header-row" id="sponsors-header-row">
                     <div>#</div>
                     <div>赞助者名单</div>
                     <div style="text-align:right;">金额</div>
-                   
                 </div>
                 <div id="sponsorsContainer">
                     <div class="sponsor-item" style="grid-column: 1 / -1; text-align: center;">
@@ -172,15 +99,9 @@
                     </div>
                 </div>
             </div>
-
-           
-            <div id="loginPrompt" class="login-prompt">
-                <p>管理员可 <a href="admin-login.html" class="login-link">登录</a> 以管理赞助名单</p>
-            </div>
-
-           
+            
             <div id="adminActions" class="admin-actions" style="display: none;">
-                <p style="color: #bdc3c7; margin-bottom: 15px;">
+                <p style="color: var(--text-color-secondary); margin-bottom: 15px;">
                     已登录为管理员
                 </p>
                 <button class="logout-btn" onclick="logout()">
@@ -196,9 +117,35 @@
             </div>
         </div>
     </main>
+    
+    <script>
+        // 秘密点击事件，用于跳转到管理员登录页面
+        document.addEventListener('DOMContentLoaded', function() {
+            const title = document.getElementById('sponsors-main-title');
+            if (title) {
+                let clickCount = 0;
+                let clickTimer = null;
 
+                title.addEventListener('click', function() {
+                    clickCount++;
+                    
+                    if (clickCount === 1) {
+                        clickTimer = setTimeout(() => {
+                            clickCount = 0;
+                        }, 1500); // 1.5秒内连续点击有效
+                    }
+
+                    if (clickCount === 5) {
+                        clearTimeout(clickTimer);
+                        window.location.href = 'admin-login.html';
+                    }
+                });
+            }
+        });
+    </script>
    
     <script>
+        // 页面主要逻辑：渲染列表和处理管理员操作
         const adminToken = localStorage.getItem('adminAuthToken');
         const isAdmin = !!adminToken;
 
@@ -218,15 +165,12 @@
         function toggleAdminFeatures() {
             const adminPanel = document.getElementById('adminPanel');
             const adminActions = document.getElementById('adminActions');
-            const loginPrompt = document.getElementById('loginPrompt');
             const headerRow = document.getElementById('sponsors-header-row');
             
             if (isAdmin) {
                 if (adminPanel) adminPanel.style.display = 'block';
                 if (adminActions) adminActions.style.display = 'block';
-                if (loginPrompt) loginPrompt.style.display = 'none';
 
-                // 动态添加“操作”表头
                 if (headerRow && !headerRow.querySelector('.admin-header')) {
                     const adminHeader = document.createElement('div');
                     adminHeader.className = 'admin-header';
@@ -237,7 +181,6 @@
             } else {
                 if (adminPanel) adminPanel.style.display = 'none';
                 if (adminActions) adminActions.style.display = 'none';
-                if (loginPrompt) loginPrompt.style.display = 'block';
             }
         }
 
@@ -249,14 +192,9 @@
                 const response = await fetch('/api/sponsors');
                 if (!response.ok) throw new Error('获取数据失败');
                 const sponsors = await response.json();
-
                 container.innerHTML = '';
-
                 if (sponsors.length === 0) {
-                    const noSponsorsItem = document.createElement('div');
-                    noSponsorsItem.className = 'sponsor-item';
-                    noSponsorsItem.innerHTML = `<div style="grid-column: 1 / -1; text-align: center;">暂无赞助记录</div>`;
-                    container.appendChild(noSponsorsItem);
+                    container.innerHTML = `<div class="sponsor-item" style="grid-column: 1 / -1; text-align: center;">暂无赞助记录</div>`;
                     return;
                 }
                 
@@ -264,24 +202,17 @@
                     const item = document.createElement('div');
                     item.className = 'sponsor-item';
                     item.setAttribute('data-id', sponsor.id);
-                    
                     let itemHTML = `
                         <div class="sponsor-number">${index + 1}</div>
                         <div class="sponsor-name">${escapeHTML(sponsor.name)}</div>
                         <div class="sponsor-amount">${escapeHTML(sponsor.amount)}</div>
                     `;
-
                     if (isAdmin) {
-                        itemHTML += `
-                            <div class="admin-action">
-                                <button class="admin-btn delete-btn" onclick="removeSponsor(${sponsor.id})">删除</button>
-                            </div>
-                        `;
+                        itemHTML += `<div class="admin-action"><button class="admin-btn delete-btn" onclick="removeSponsor(${sponsor.id})">删除</button></div>`;
                     }
                     item.innerHTML = itemHTML;
                     container.appendChild(item);
                 });
-
             } catch (error) {
                 console.error('渲染赞助列表错误:', error);
                 container.innerHTML = `<div class="sponsor-item"><p style="grid-column: 1 / -1; text-align: center; color: red;">加载失败: ${error.message}</p></div>`;
@@ -304,7 +235,7 @@
                 });
                 if (!response.ok) throw new Error((await response.json()).error || '添加失败');
                 alert('添加赞助者成功！');
-                this.reset();
+                document.getElementById('addSponsorForm').reset();
                 renderSponsors();
             } catch (error) {
                 alert(`错误: ${error.message}`);
@@ -335,7 +266,10 @@
         }
         
         function escapeHTML(str) {
-            if (typeof str !== 'string') return '';
+            if (typeof str !== 'string' && str !== null && str !== undefined) {
+                str = str.toString();
+            }
+            if (!str) return '';
             return str.replace(/[&<>"']/g, match => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[match]));
         }
     </script>
