@@ -1,5 +1,5 @@
 // =================================================================
-// server.js - v8.3 (最终版 - 优化 Resend 错误处理)
+// server.js - v8.3 (最终版 - 包含 /api/verify-email 接口)
 // =================================================================
 // 关键特性:
 // 1. 完整的玩家与管理员认证流程。
@@ -118,7 +118,7 @@ app.post('/api/register', async (req, res) => {
         `;
 
         const { data, error } = await resend.emails.send({
-            from: 'Eulark 服务器 <message@betteryuan.cn>', // !!! 确保这里的域名已在 Resend 验证
+            from: 'Eulark 服务器 <message@betteryuan.cn>', // 确保这里的域名已在 Resend 验证
             to: email,
             subject: '您的 Eulark 服务器验证码',
             html: emailHtml,

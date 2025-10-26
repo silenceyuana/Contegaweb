@@ -74,10 +74,7 @@
         const verificationForm = document.getElementById('verificationForm');
         const messageDiv = document.getElementById('formMessage');
         
-        // 用于在两个步骤之间传递用户的邮箱地址
-        let userEmailForVerification = '';
-
-        // 处理步骤 1: 提交注册信息，请求发送验证码
+        // (已修改) 处理步骤 1: 提交注册信息，请求发送验证码
         registerForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -105,8 +102,9 @@
                 messageDiv.textContent = '验证码已成功发送至您的邮箱，请查收！';
                 messageDiv.style.color = '#2ecc71';
                 
-                // 存储邮箱，并切换到验证码输入界面
-                userEmailForVerification = email;
+                // (新) 将邮箱存入 localStorage，这样刷新页面也不会丢失
+                localStorage.setItem('emailForVerification', email);
+                
                 registerStep.style.display = 'none';
                 verificationStep.style.display = 'block';
 
@@ -118,9 +116,17 @@
             }
         });
 
-        // 处理步骤 2: 提交验证码，完成最终注册
+        // (已修改) 处理步骤 2: 提交验证码，完成最终注册
         verificationForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+
+            // (新) 从 localStorage 读取邮箱地址
+            const emailForVerification = localStorage.getItem('emailForVerification');
+            if (!emailForVerification) {
+                messageDiv.textContent = '无法找到您的邮箱信息，可能是页面已过期，请返回重新注册。';
+                messageDiv.style.color = '#e74c3c';
+                return;
+            }
 
             const code = document.getElementById('verificationCode').value.trim();
             const submitButton = this.querySelector('button[type="submit"]');
@@ -133,7 +139,7 @@
                 const response = await fetch('/api/verify-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: userEmailForVerification, code })
+                    body: JSON.stringify({ email: emailForVerification, code })
                 });
 
                 const result = await response.json();
@@ -144,7 +150,9 @@
                 messageDiv.textContent = '注册成功！正在跳转到登录页面...';
                 messageDiv.style.color = '#2ecc71';
             
-                // 2秒后自动跳转到登录页
+                // (新) 清理 localStorage 中临时的邮箱信息
+                localStorage.removeItem('emailForVerification');
+
                 setTimeout(() => {
                     window.location.href = 'login.html';
                 }, 2000);
@@ -156,6 +164,15 @@
                 submitButton.innerHTML = '<i class="fas fa-check"></i> 完成注册';
             }
         });
+
+        // (新) 页面加载时检查是否处于验证步骤，防止刷新后回到第一步
+        document.addEventListener('DOMContentLoaded', () => {
+            const emailForVerification = localStorage.getItem('emailForVerification');
+            if(emailForVerification) {
+                registerStep.style.display = 'none';
+                verificationStep.style.display = 'block';
+            }
+        });
     </script>
 </body>
-</html>```
+</html>
