@@ -121,7 +121,7 @@ app.post('/api/register', async (req, res) => {
         // 使用 Resend 发送邮件
         await resend.emails.send({
             // !!! 重要：请修改为您在 Resend 验证过的域名邮箱
-            from: 'Eulark 服务器 <noreply@yourdomain.com>', 
+            from: 'Eulark 服务器 <message@betteryuan.cn>', 
             to: email,
             subject: '您的 Eulark 服务器验证码',
             html: emailHtml,
