@@ -152,3 +152,24 @@ COMMENT ON TABLE public.pending_verifications IS '存储待邮件验证的用户
 ALTER TABLE public.pending_verifications ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow service role access" ON public.pending_verifications FOR ALL USING (true);
+
+
+
+
+CREATE TABLE public.special_permissions (
+
+  player_id bigint NOT NULL PRIMARY KEY,
+  
+ 
+
+  CONSTRAINT special_permissions_player_id_fkey FOREIGN KEY (player_id) 
+  REFERENCES public.players (id) ON DELETE CASCADE
+);
+
+
+ALTER TABLE public.special_permissions ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "Enable all access for service-role" 
+ON public.special_permissions FOR ALL 
+USING (auth.role() = 'service_role');

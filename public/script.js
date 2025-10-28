@@ -1,44 +1,32 @@
 /* =================================================================
-// script.js - Eulark 生电服务器官网
-// 版本: v7.0 (简化版 - 移除签到与商城)
-// 描述: 这是网站核心的客户端脚本，负责处理通用UI交互、
-//      服务器状态检查、用户认证状态显示以及工单提交。
+// script.js - v7.1 (新增特殊权限链接检查)
 // ================================================================= */
 
-// --- 1. 全局常量与状态 ---
 const PLAYER_AUTH_TOKEN = localStorage.getItem('playerAuthToken');
-const ADMIN_AUTH_TOKEN = localStorage.getItem('adminAuthToken');
 const IS_PLAYER_LOGGED_IN = !!PLAYER_AUTH_TOKEN;
+const ADMIN_AUTH_TOKEN = localStorage.getItem('adminAuthToken');
 const IS_ADMIN_LOGGED_IN = !!ADMIN_AUTH_TOKEN;
 
-// --- 2. 主程序入口 ---
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化基础UI交互
     initializeBaseUI();
-    // 初始化页面滚动动画
     initializeAnimations();
-    // 根据登录状态更新导航栏
     updateNavbar();
-    // 根据登录状态更新工单表单的可用性
     updateContactFormUI();
+    
+    if (IS_PLAYER_LOGGED_IN) {
+        checkAndShowSpecialLinks();
+    }
 
-    // 为工单表单绑定提交事件
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
         contactForm.addEventListener('submit', handleContactSubmit);
     }
     
-    // 如果是管理员登录，为 body 添加一个 class，用于特定样式的显示
     if (IS_ADMIN_LOGGED_IN) {
         document.body.classList.add('admin-view');
     }
 });
 
-// --- 3. 初始化函数 ---
-
-/**
- * 初始化基础UI元素，如移动端菜单、平滑滚动等。
- */
 function initializeBaseUI() {
     const menuToggle = document.querySelector('.menu-toggle');
     const navMenu = document.querySelector('.nav-menu');
@@ -66,14 +54,10 @@ function initializeBaseUI() {
         }
     });
 
-    // 页面加载时立即检查一次服务器状态，之后每分钟刷新一次
     checkServerStatus();
     setInterval(checkServerStatus, 60000);
 }
 
-/**
- * 初始化页面元素的滚动淡入动画。
- */
 function initializeAnimations() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -93,11 +77,6 @@ function initializeAnimations() {
     animatedElements.forEach(el => observer.observe(el));
 }
 
-// --- 4. 核心功能函数 ---
-
-/**
- * 异步获取并更新Minecraft服务器的状态。
- */
 async function checkServerStatus() {
     const statusContainer = document.querySelector('.server-status');
     const statusText = document.querySelector('.status-text');
@@ -105,8 +84,7 @@ async function checkServerStatus() {
     if (!statusContainer || !statusText || !playerCount) return;
 
     try {
-
-        const response = await fetch(`https://api.mcsrvstat.us/3/eulark.air114.top`);
+        const response = await fetch(`https://api.mcsrvstat.us/3/play.eulark.tech`);
         const data = await response.json();
 
         if (data.online) {
@@ -126,9 +104,6 @@ async function checkServerStatus() {
     }
 }
 
-/**
- * 更新导航栏，显示登录按钮或用户信息。
- */
 function updateNavbar() {
     const authContainer = document.getElementById('auth-container');
     const playerInfo = localStorage.getItem('playerInfo');
@@ -150,7 +125,6 @@ function updateNavbar() {
                     </button>
                 </div>`;
         } catch (e) {
-            // 如果解析用户信息失败，清空本地存储并显示登录按钮
             localStorage.clear();
             showLoginButton();
         }
@@ -159,9 +133,6 @@ function updateNavbar() {
     }
 }
 
-/**
- * 处理用户登出操作。
- */
 function logout() {
     localStorage.removeItem('playerAuthToken');
     localStorage.removeItem('playerInfo');
@@ -169,9 +140,6 @@ function logout() {
     window.location.reload();
 }
 
-/**
- * 根据登录状态更新工单提交表单的UI。
- */
 function updateContactFormUI() {
     const contactForm = document.getElementById('contactForm');
     if (!contactForm) return;
@@ -182,7 +150,7 @@ function updateContactFormUI() {
     if (!IS_PLAYER_LOGGED_IN) {
         if (playerMessageTextarea) {
             playerMessageTextarea.disabled = true;
-            playerMessageTextarea.placeholder = '请先登录，才能提交工-单。';
+            playerMessageTextarea.placeholder = '请先登录，才能提交工单。';
         }
         if (contactSubmitButton) {
             contactSubmitButton.disabled = true;
@@ -190,10 +158,6 @@ function updateContactFormUI() {
     }
 }
 
-/**
- * 处理工单表单的提交事件。
- * @param {Event} e - 表单提交事件
- */
 async function handleContactSubmit(e) {
     e.preventDefault();
     const form = e.target;
@@ -236,13 +200,32 @@ async function handleContactSubmit(e) {
     }
 }
 
-// --- 5. 辅助工具函数 ---
+async function checkAndShowSpecialLinks() {
+    try {
+        const response = await fetch('/api/player/check-permission', {
+            headers: {
+                'Authorization': `Bearer ${PLAYER_AUTH_TOKEN}`
+            }
+        });
 
-/**
- * 对HTML特殊字符进行转义，防止XSS攻击。
- * @param {string} str - 需要转义的字符串
- * @returns {string} - 转义后的安全字符串
- */
+        if (!response.ok) {
+            console.error('无法检查特殊权限:', response.statusText);
+            return;
+        }
+
+        const data = await response.json();
+        
+        if (data.hasPermission) {
+            const buildingListLink = document.getElementById('building-list-link');
+            if (buildingListLink) {
+                buildingListLink.style.display = 'list-item';
+            }
+        }
+    } catch (error) {
+        console.error('检查特殊权限时发生网络错误:', error);
+    }
+}
+
 function escapeHTML(str) {
     if (typeof str !== 'string' && str !== null && str !== undefined) {
         str = str.toString();
