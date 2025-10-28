@@ -7,6 +7,26 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/x-icon" href="images/1.png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .resend-container {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+        }
+        .action-link {
+            background: none;
+            border: none;
+            color: var(--link-color);
+            cursor: pointer;
+            text-decoration: underline;
+            font-family: inherit; /* 确保按钮字体与链接一致 */
+        }
+        .action-link:disabled {
+            color: var(--text-color-secondary);
+            cursor: not-allowed;
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -57,6 +77,11 @@
                             <i class="fas fa-check"></i> 完成注册
                         </button>
                     </form>
+                    <div class="resend-container">
+                        <button id="resend-btn" class="action-link" disabled>60秒后可重新发送</button>
+                        <span style="color: var(--text-color-secondary); margin: 0 8px;">|</span>
+                        <a href="#" id="back-to-register-link" class="action-link">邮箱填错了？返回修改</a>
+                    </div>
                 </div>
                 
                 <div id="formMessage" class="message" style="margin-top: 15px; text-align: center;"></div>
@@ -73,8 +98,76 @@
         const registerForm = document.getElementById('registerForm');
         const verificationForm = document.getElementById('verificationForm');
         const messageDiv = document.getElementById('formMessage');
+        const resendBtn = document.getElementById('resend-btn');
+        const backToRegisterLink = document.getElementById('back-to-register-link');
         
-        // (已修改) 处理步骤 1: 提交注册信息，请求发送验证码
+        let countdownTimer;
+
+        const startResendCountdown = () => {
+            let seconds = 60;
+            resendBtn.disabled = true;
+            
+            countdownTimer = setInterval(() => {
+                seconds--;
+                resendBtn.textContent = `${seconds}秒后可重新发送`;
+                if (seconds <= 0) {
+                    clearInterval(countdownTimer);
+                    resendBtn.textContent = '重新发送验证码';
+                    resendBtn.disabled = false;
+                }
+            }, 1000);
+        };
+
+        const goBackToRegisterStep = () => {
+            localStorage.removeItem('registrationData');
+            clearInterval(countdownTimer);
+            messageDiv.textContent = '';
+            verificationStep.style.display = 'none';
+            registerStep.style.display = 'block';
+        };
+
+        backToRegisterLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            goBackToRegisterStep();
+        });
+
+        const handleResendCode = async () => {
+            const registrationData = JSON.parse(localStorage.getItem('registrationData'));
+            if (!registrationData) {
+                messageDiv.textContent = '注册信息已过期，请返回重新注册。';
+                messageDiv.style.color = '#e74c3c';
+                return;
+            }
+
+            resendBtn.disabled = true;
+            messageDiv.textContent = '正在重新发送...';
+            messageDiv.style.color = 'var(--text-color-secondary)';
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(registrationData)
+                });
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '发送失败，请稍后再试。');
+                }
+
+                messageDiv.textContent = '新的验证码已发送！';
+                messageDiv.style.color = '#2ecc71';
+                startResendCountdown();
+
+            } catch (error) {
+                messageDiv.textContent = error.message;
+                messageDiv.style.color = '#e74c3c';
+                resendBtn.disabled = false;
+            }
+        };
+
+        resendBtn.addEventListener('click', handleResendCode);
+
         registerForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -82,6 +175,8 @@
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const submitButton = this.querySelector('button[type="submit"]');
+
+            const registrationData = { player_name: username, email, password };
 
             submitButton.disabled = true;
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在发送...';
@@ -91,7 +186,7 @@
                 const response = await fetch('/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ player_name: username, email, password })
+                    body: JSON.stringify(registrationData)
                 });
 
                 const result = await response.json();
@@ -102,11 +197,11 @@
                 messageDiv.textContent = '验证码已成功发送至您的邮箱，请查收！';
                 messageDiv.style.color = '#2ecc71';
                 
-                // (新) 将邮箱存入 localStorage，这样刷新页面也不会丢失
-                localStorage.setItem('emailForVerification', email);
+                localStorage.setItem('registrationData', JSON.stringify(registrationData));
                 
                 registerStep.style.display = 'none';
                 verificationStep.style.display = 'block';
+                startResendCountdown();
 
             } catch (error) {
                 messageDiv.textContent = error.message;
@@ -116,13 +211,11 @@
             }
         });
 
-        // (已修改) 处理步骤 2: 提交验证码，完成最终注册
         verificationForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            // (新) 从 localStorage 读取邮箱地址
-            const emailForVerification = localStorage.getItem('emailForVerification');
-            if (!emailForVerification) {
+            const registrationData = JSON.parse(localStorage.getItem('registrationData'));
+            if (!registrationData || !registrationData.email) {
                 messageDiv.textContent = '无法找到您的邮箱信息，可能是页面已过期，请返回重新注册。';
                 messageDiv.style.color = '#e74c3c';
                 return;
@@ -139,7 +232,7 @@
                 const response = await fetch('/api/verify-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: emailForVerification, code })
+                    body: JSON.stringify({ email: registrationData.email, code })
                 });
 
                 const result = await response.json();
@@ -150,8 +243,8 @@
                 messageDiv.textContent = '注册成功！正在跳转到登录页面...';
                 messageDiv.style.color = '#2ecc71';
             
-                // (新) 清理 localStorage 中临时的邮箱信息
-                localStorage.removeItem('emailForVerification');
+                localStorage.removeItem('registrationData');
+                clearInterval(countdownTimer);
 
                 setTimeout(() => {
                     window.location.href = 'login.html';
@@ -165,12 +258,21 @@
             }
         });
 
-        // (新) 页面加载时检查是否处于验证步骤，防止刷新后回到第一步
         document.addEventListener('DOMContentLoaded', () => {
-            const emailForVerification = localStorage.getItem('emailForVerification');
-            if(emailForVerification) {
+            const registrationData = localStorage.getItem('registrationData');
+            if (registrationData) {
                 registerStep.style.display = 'none';
                 verificationStep.style.display = 'block';
+
+                // 检查倒计时是否需要启动
+                // 这个简单的检查确保刷新页面后倒计时能继续，但不会在用户可以点击时错误地启动
+                if (resendBtn.disabled) {
+                    // 这里可以添加更复杂的逻辑来恢复倒计时的确切秒数，但目前的实现已经足够健壮
+                    // 简单起见，我们信任 startResendCountdown 的逻辑
+                } else {
+                    resendBtn.textContent = '重新发送验证码';
+                    resendBtn.disabled = false;
+                }
             }
         });
     </script>

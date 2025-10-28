@@ -123,3 +123,32 @@ SUPABASE_ANON_KEY
 
 JWT_SECRET	
 必需。一个用于签名和验证 JSON Web Tokens (JWT) 的密钥。它保证了用户登录状态（Token）的安全性和真实性，防止被伪造。	您需要自己创建一个这个值。它必须是一个长久、随机且保密的字符串。不要使用简单或可预测的密码。<br><br>生成方法推荐：<br>• 使用密码管理器：生成一个 32 或 64 个字符的随机密码。<br>• 使用在线生成器：例如 random.org 或 1Password Generator。<br>• 示例 (请勿直接使用): a_very_long_and_super_secret_string_for_my_jwt_!@#$1234
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- 7. (新增) 创建待验证用户表 (pending_verifications)
+-- 此表用于存储注册过程中用户的临时信息和邮箱验证码
+DROP TABLE IF EXISTS public.pending_verifications;
+CREATE TABLE public.pending_verifications (
+  email text NOT NULL PRIMARY KEY,
+  player_name text NOT NULL,
+  password_hash text NOT NULL,
+  verification_code text NOT NULL,
+  created_at timestamp with time zone DEFAULT now() NOT NULL,
+
+  expires_at timestamp with time zone DEFAULT (now() + interval '20 minute') NOT NULL
+);
+COMMENT ON TABLE public.pending_verifications IS '存储待邮件验证的用户注册信息。';
+ALTER TABLE public.pending_verifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow service role access" ON public.pending_verifications FOR ALL USING (true);
