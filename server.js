@@ -282,6 +282,83 @@ app.get('/api/player/check-permission', verifyToken, async (req, res) => {
     }
 });
 
+
+
+
+app.get('/api/admin/players', verifyToken, async (req, res) => {
+    if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
+    try {
+        // 使用 JOIN 查询，同时获取玩家信息和他们的特殊权限状态
+        const { data, error } = await supabase
+            .from('players')
+            .select(`
+                id,
+                player_name,
+                email,
+                created_at,
+                special_permissions ( player_id )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        // 整理数据，添加一个易于前端使用的 has_permission 字段
+        const players = data.map(p => ({
+            ...p,
+            has_permission: p.special_permissions.length > 0
+        }));
+
+        res.json(players);
+    } catch (error) {
+        console.error('获取玩家列表错误:', error);
+        res.status(500).json({ error: '获取玩家列表失败' });
+    }
+});
+
+app.post('/api/admin/permissions', verifyToken, async (req, res) => {
+    if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
+    const { player_id } = req.body;
+    if (!player_id) return res.status(400).json({ error: '未提供玩家ID' });
+    try {
+        const { data, error } = await supabase.from('special_permissions').insert({ player_id });
+        if (error) throw error;
+        res.status(201).json({ message: '授权成功' });
+    } catch (error) {
+        console.error('授权错误:', error);
+        res.status(500).json({ error: '授权失败' });
+    }
+});
+
+app.delete('/api/admin/permissions/:id', verifyToken, async (req, res) => {
+    if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
+    const { id: player_id } = req.params;
+    try {
+        const { error } = await supabase.from('special_permissions').delete().eq('player_id', player_id);
+        if (error) throw error;
+        res.status(200).json({ message: '取消授权成功' });
+    } catch (error) {
+        console.error('取消授权错误:', error);
+        res.status(500).json({ error: '取消授权失败' });
+    }
+});
+
+app.delete('/api/admin/players/:id', verifyToken, async (req, res) => {
+    if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
+    const { id: player_id } = req.params;
+    try {
+        const { error } = await supabase.from('players').delete().eq('id', player_id);
+        if (error) throw error;
+        // Supabase 中设置的 ON DELETE CASCADE 会自动删除 special_permissions 表中的关联记录
+        res.status(200).json({ message: '删除用户成功' });
+    } catch (error) {
+        console.error('删除用户错误:', error);
+        res.status(500).json({ error: '删除用户失败' });
+    }
+});
+
+
+
+
 // --- 11. 受保护的管理员 API ---
 app.get('/api/admin/messages', verifyToken, async (req, res) => { try { const { data, error } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false }); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
 app.delete('/api/admin/messages/:id', verifyToken, async (req, res) => { const { id } = req.params; try { await supabase.from('contact_messages').delete().eq('id', id); res.status(200).json({ message: '工单删除成功' }); } catch (error) { res.status(500).json({ error: error.message }); } });
