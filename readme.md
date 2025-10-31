@@ -173,3 +173,27 @@ ALTER TABLE public.special_permissions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable all access for service-role" 
 ON public.special_permissions FOR ALL 
 USING (auth.role() = 'service_role');
+
+
+
+
+
+-- 创建一个新表，用于存储密码重置令牌
+CREATE TABLE public.password_resets (
+  -- 用户的邮箱，作为主键，确保一个邮箱同时只能有一个重置请求
+  email text NOT NULL PRIMARY KEY,
+  
+  -- 用于验证的唯一令牌
+  token text NOT NULL,
+  
+  -- 令牌的过期时间，设置为1小时后
+  expires_at timestamp with time zone NOT NULL DEFAULT (now() + interval '1 hour')
+);
+
+-- 为这张表启用行级安全策略（RLS）
+ALTER TABLE public.password_resets ENABLE ROW LEVEL SECURITY;
+
+-- 创建一个策略，允许后端服务器进行所有操作
+CREATE POLICY "Enable all access for service-role" 
+ON public.password_resets FOR ALL 
+USING (auth.role() = 'service_role');

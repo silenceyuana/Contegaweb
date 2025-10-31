@@ -1,5 +1,5 @@
 /* =================================================================
-// script.js - v7.1 (新增特殊权限链接检查)
+// script.js - v7.2 (安全权限链接)
 // ================================================================= */
 
 const PLAYER_AUTH_TOKEN = localStorage.getItem('playerAuthToken');
@@ -215,10 +215,14 @@ async function checkAndShowSpecialLinks() {
 
         const data = await response.json();
         
-        if (data.hasPermission) {
-            const buildingListLink = document.getElementById('building-list-link');
-            if (buildingListLink) {
-                buildingListLink.style.display = 'list-item';
+        if (data.hasPermission && data.url) {
+            const linkContainer = document.getElementById('building-list-link');
+            const linkAnchor = document.getElementById('building-list-anchor');
+
+            if (linkContainer && linkAnchor) {
+                linkAnchor.href = data.url;
+                linkAnchor.target = '_blank';
+                linkContainer.style.display = 'list-item';
             }
         }
     } catch (error) {

@@ -1,12 +1,13 @@
 // =================================================================
-// server.js - v8.5 (新增特殊权限检查接口)
+// server.js - v9.1 (安全权限检查 - 完整最终版)
 // =================================================================
 // 关键特性:
 // 1. 完整的玩家与管理员认证流程。
-// 2. 使用 Resend API 实现两步注册邮件验证。
-// 3. 新增 /api/player/check-permission 接口，用于检查特定权限。
-// 4. 安全的工单、封禁墙和赞助名单 API。
-// 5. 为 Vercel 无服务器环境正确配置。
+// 2. 使用 Resend API 实现两步注册邮件验证，并校验两次密码输入。
+// 3. 完整的密码重置流程 (/api/forgot-password, /api/reset-password)。
+// 4. (安全更新) /api/player/check-permission 接口，仅在用户有权限时才返回敏感 URL。
+// 5. 安全的工单、封禁墙和赞助名单 API。
+// 6. 为 Vercel 无服务器环境正确配置。
 // =================================================================
 
 // --- 1. 引入依赖 ---
@@ -17,16 +18,19 @@ const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Resend } = require('resend');
+const crypto = require('crypto');
 
 // --- 2. Supabase & 环境变量 ---
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const jwtSecret = process.env.JWT_SECRET;
 const resendApiKey = process.env.RESEND_API_KEY;
+const baseUrl = process.env.BASE_URL;
+const buildingListUrl = process.env.BUILDING_LIST_URL;
 
 // 关键检查
-if (!supabaseUrl || !supabaseAnonKey || !jwtSecret || !resendApiKey) {
-    console.error("严重错误：缺少一个或多个关键环境变量。");
+if (!supabaseUrl || !supabaseAnonKey || !jwtSecret || !resendApiKey || !baseUrl || !buildingListUrl) {
+    console.error("严重错误：缺少一个或多个关键环境变量 (SUPABASE_URL, SUPABASE_ANON_KEY, JWT_SECRET, RESEND_API_KEY, BASE_URL, BUILDING_LIST_URL)。");
     process.exit(1);
 }
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -69,11 +73,13 @@ app.get('/api/sponsors', async (req, res) => { try { const { data, error } = awa
 
 // --- 9. 认证 API ---
 
-// 步骤 1: 注册
 app.post('/api/register', async (req, res) => {
-    const { player_name, email, password } = req.body;
-    if (!player_name || !email || !password) {
-        return res.status(400).json({ error: '玩家名、邮箱和密码不能为空。' });
+    const { player_name, email, password, confirmPassword } = req.body;
+    if (!player_name || !email || !password || !confirmPassword) {
+        return res.status(400).json({ error: '所有字段均为必填项。' });
+    }
+    if (password !== confirmPassword) {
+        return res.status(400).json({ error: '两次输入的密码不一致。' });
     }
     try {
         const { data: existingPlayer } = await supabase.from('players').select('email').eq('email', email).single();
@@ -83,7 +89,29 @@ app.post('/api/register', async (req, res) => {
         const password_hash = await bcrypt.hash(password, 10);
         const verification_code = Math.floor(100000 + Math.random() * 900000).toString();
         await supabase.from('pending_verifications').upsert({ email, player_name, password_hash, verification_code }, { onConflict: 'email' });
-        const emailHtml = `...`; // 邮件模板内容
+        
+        const emailHtml = `
+            <div style="font-family: Arial, 'Microsoft YaHei', sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h1 style="color: #3F51B5; font-size: 26px;">Eulark 生电服务器</h1>
+                </div>
+                <h2 style="color: #333; font-size: 20px;">你好,</h2>
+                <p style="color: #555; font-size: 16px; line-height: 1.6;">输入此代码，即可完成您的账户注册：</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <p style="font-size: 36px; font-weight: bold; letter-spacing: 5px; color: #3F51B5; background-color: #f5f5f5; padding: 15px; border-radius: 5px; display: inline-block;">
+                        ${verification_code}
+                    </p>
+                </div>
+                <p style="color: #555; font-size: 14px;">此代码的有效时间为 20 分钟，并且仅可使用一次。输入此代码时，您将同时确认与账户关联的邮箱地址。</p>
+                <p style="color: #777; font-size: 12px; margin-top: 30px;">如果您并未尝试注册，则可放心忽略此邮件。</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin-top: 20px;" />
+                <div style="text-align: right; color: #555; font-size: 14px;">
+                    <p>此致</p>
+                    <p><strong>Eulark 服务器团队</strong></p>
+                </div>
+            </div>
+        `;
+
         const { data, error } = await resend.emails.send({
             from: 'Eulark 服务器 <message@betteryuan.cn>',
             to: email,
@@ -98,33 +126,24 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// 步骤 2: 验证
 app.post('/api/verify-email', async (req, res) => {
     const { email, code } = req.body;
-    if (!email || !code) {
-        return res.status(400).json({ error: '邮箱和验证码不能为空。' });
-    }
+    if (!email || !code) { return res.status(400).json({ error: '邮箱和验证码不能为空。' }); }
     try {
         const { data: pending, error: findError } = await supabase.from('pending_verifications').select('*').eq('email', email).single();
-        if (findError || !pending) {
-            return res.status(404).json({ error: '验证请求不存在，请重新注册。' });
-        }
+        if (findError || !pending) { return res.status(404).json({ error: '验证请求不存在，请重新注册。' }); }
         if (new Date(pending.expires_at) < new Date()) {
             await supabase.from('pending_verifications').delete().eq('email', email);
             return res.status(400).json({ error: '验证码已过期，请重新注册。' });
         }
-        if (pending.verification_code !== code) {
-            return res.status(400).json({ error: '验证码无效。' });
-        }
+        if (pending.verification_code !== code) { return res.status(400).json({ error: '验证码无效。' }); }
         const { data: newPlayer, error: insertError } = await supabase.from('players').insert({
             player_name: pending.player_name,
             email: pending.email,
             password_hash: pending.password_hash,
         }).select().single();
         if (insertError) {
-            if (insertError.code === '23505') {
-                 return res.status(409).json({ error: '玩家名或邮箱已被注册' });
-            }
+            if (insertError.code === '23505') { return res.status(409).json({ error: '玩家名或邮箱已被注册' }); }
             throw insertError;
         }
         await supabase.from('pending_verifications').delete().eq('email', email);
@@ -135,7 +154,6 @@ app.post('/api/verify-email', async (req, res) => {
     }
 });
 
-// 登录
 app.post('/api/login', async (req, res) => { 
     const { identifier, password } = req.body; 
     if (!identifier || !password) return res.status(400).json({ error: '玩家名/邮箱和密码不能为空' }); 
@@ -153,7 +171,6 @@ app.post('/api/login', async (req, res) => {
     } 
 });
 
-// 管理员登录
 app.post('/api/admin/login', async (req, res) => { 
     const { username, password } = req.body; 
     if (!username || !password) return res.status(400).json({ error: '用户名和密码不能为空' }); 
@@ -169,6 +186,67 @@ app.post('/api/admin/login', async (req, res) => {
         console.error('管理员登录错误:', err); 
         res.status(500).json({ error: '服务器内部错误' }); 
     } 
+});
+
+app.post('/api/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) { return res.status(400).json({ error: '邮箱不能为空。' }); }
+    try {
+        const { data: player, error: playerError } = await supabase.from('players').select('id, player_name').eq('email', email).single();
+        if (playerError || !player) {
+            return res.status(200).json({ message: '如果该邮箱已注册，您将会收到一封密码重置邮件。' });
+        }
+        const token = crypto.randomBytes(32).toString('hex');
+        await supabase.from('password_resets').upsert({ email: email, token: token }, { onConflict: 'email' });
+        const resetLink = `${baseUrl}/reset-password.html?token=${token}`;
+        
+        const emailHtml = `
+            <div style="font-family: Arial, 'Microsoft YaHei', sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                <h1 style="color: #3F51B5;">Eulark 服务器 - 密码重置</h1>
+                <p>你好, ${player.player_name}，</p>
+                <p>我们收到了一个重置您账户密码的请求。请点击下方的链接来设置您的新密码。该链接将在1小时后失效。</p>
+                <div style="margin: 20px 0; text-align: center;">
+                    <a href="${resetLink}" style="background-color: #3F51B5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px;">重置密码</a>
+                </div>
+                <p>如果您无法点击按钮，请复制以下链接到浏览器地址栏打开：</p>
+                <p style="word-break: break-all; font-size: 12px;">${resetLink}</p>
+                <p>如果您没有请求重置密码，请忽略此邮件。</p>
+            </div>
+        `;
+
+        await resend.emails.send({
+            from: 'Eulark 服务器 <message@betteryuan.cn>',
+            to: email,
+            subject: 'Eulark 服务器 - 密码重置请求',
+            html: emailHtml,
+        });
+        res.status(200).json({ message: '如果该邮箱已注册，您将会收到一封密码重置邮件。' });
+    } catch (err) {
+        console.error('忘记密码错误:', err);
+        res.status(500).json({ error: '服务器内部错误。' });
+    }
+});
+
+app.post('/api/reset-password', async (req, res) => {
+    const { token, password, confirmPassword } = req.body;
+    if (!token || !password || !confirmPassword) { return res.status(400).json({ error: '所有字段均为必填项。' }); }
+    if (password !== confirmPassword) { return res.status(400).json({ error: '两次输入的密码不一致。' }); }
+    try {
+        const { data: resetRequest, error: findError } = await supabase.from('password_resets').select('*').eq('token', token).single();
+        if (findError || !resetRequest) { return res.status(400).json({ error: '无效的或已过期的重置链接。' }); }
+        if (new Date(resetRequest.expires_at) < new Date()) {
+            await supabase.from('password_resets').delete().eq('token', token);
+            return res.status(400).json({ error: '重置链接已过期，请重新请求。' });
+        }
+        const password_hash = await bcrypt.hash(password, 10);
+        const { error: updateError } = await supabase.from('players').update({ password_hash: password_hash }).eq('email', resetRequest.email);
+        if (updateError) throw updateError;
+        await supabase.from('password_resets').delete().eq('token', token);
+        res.status(200).json({ message: '密码重置成功！现在您可以使用新密码登录了。' });
+    } catch (err) {
+        console.error('重置密码错误:', err);
+        res.status(500).json({ error: '服务器内部错误。' });
+    }
 });
 
 // --- 10. 受保护的玩家 API ---
@@ -187,23 +265,17 @@ app.post('/api/contact', verifyToken, async (req, res) => {
         res.status(500).json({ error: '服务器内部错误，提交失败' }); 
     } 
 });
-
 app.get('/api/player/check-permission', verifyToken, async (req, res) => {
     const { id: playerId } = req.user;
     try {
-        const { data, error } = await supabase
-            .from('special_permissions')
-            .select('player_id')
-            .eq('player_id', playerId)
-            .single();
-
-        if (error && error.code !== 'PGRST116') {
-            throw error;
-        }
-
+        const { data, error } = await supabase.from('special_permissions').select('player_id').eq('player_id', playerId).single();
+        if (error && error.code !== 'PGRST116') { throw error; }
         const hasPermission = !!data;
-        res.json({ hasPermission });
-
+        if (hasPermission) {
+            res.json({ hasPermission: true, url: buildingListUrl });
+        } else {
+            res.json({ hasPermission: false });
+        }
     } catch (error) {
         console.error('检查权限时发生错误:', error);
         res.status(500).json({ error: '无法检查用户权限' });
