@@ -1,16 +1,6 @@
-// =================================================================
-// server.js - v9.1 (安全权限检查 - 完整最终版)
-// =================================================================
-// 关键特性:
-// 1. 完整的玩家与管理员认证流程。
-// 2. 使用 Resend API 实现两步注册邮件验证，并校验两次密码输入。
-// 3. 完整的密码重置流程 (/api/forgot-password, /api/reset-password)。
-// 4. (安全更新) /api/player/check-permission 接口，仅在用户有权限时才返回敏感 URL。
-// 5. 安全的工单、封禁墙和赞助名单 API。
-// 6. 为 Vercel 无服务器环境正确配置。
-// =================================================================
 
-// --- 1. 引入依赖 ---
+
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -28,27 +18,27 @@ const resendApiKey = process.env.RESEND_API_KEY;
 const baseUrl = process.env.BASE_URL;
 const buildingListUrl = process.env.BUILDING_LIST_URL;
 
-// 关键检查
+
 if (!supabaseUrl || !supabaseAnonKey || !jwtSecret || !resendApiKey || !baseUrl || !buildingListUrl) {
     console.error("严重错误：缺少一个或多个关键环境变量 (SUPABASE_URL, SUPABASE_ANON_KEY, JWT_SECRET, RESEND_API_KEY, BASE_URL, BUILDING_LIST_URL)。");
     process.exit(1);
 }
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// --- 3. Resend 初始化 ---
+
 const resend = new Resend(resendApiKey);
 
-// --- 4. Express 应用初始化 ---
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- 5. 中间件 ---
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- 6. JWT 验证中间件 ---
+
 const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -61,11 +51,11 @@ const verifyToken = (req, res, next) => {
     });
 };
 
-// --- 7. 页面路由 ---
+
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin-login.html')));
 
-// --- 8. 公共 API 路由 (无需登录) ---
+-
 app.get('/api/rules', async (req, res) => { try { const { data, error } = await supabase.from('server_rules').select('*').order('id'); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
 app.get('/api/commands', async (req, res) => { try { const { data, error } = await supabase.from('server_commands').select('*').order('id'); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
 app.get('/api/bans', async (req, res) => { try { const { data, error } = await supabase.from('banned_players').select('*').order('ban_date', { ascending: false }); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
@@ -249,7 +239,7 @@ app.post('/api/reset-password', async (req, res) => {
     }
 });
 
-// --- 10. 受保护的玩家 API ---
+
 app.post('/api/contact', verifyToken, async (req, res) => { 
     const { message } = req.body; 
     const { id: playerId, player_name } = req.user; 
@@ -285,7 +275,7 @@ app.get('/api/player/check-permission', verifyToken, async (req, res) => {
 
 
 
-// 管理员用户管理 API
+
 app.get('/api/admin/players', verifyToken, async (req, res) => {
     if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
     try {
