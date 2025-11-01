@@ -197,3 +197,14 @@ ALTER TABLE public.password_resets ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable all access for service-role" 
 ON public.password_resets FOR ALL 
 USING (auth.role() = 'service_role');
+
+
+
+
+
+
+
+
+
+
+SUPABASE_SERVICE_KEY  密钥权限

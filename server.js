@@ -1,3 +1,13 @@
+// =================================================================
+// server.js - v9.6 (使用 RPC 函数替代 Service Key - 完整最终版)
+// =================================================================
+// 关键特性:
+// 1. (安全) 客户端初始化使用低权限的 anon key。
+// 2. (安全) 管理员授权/取消授权操作通过调用数据库 RPC 函数完成，不再需要 service_role 密钥。
+// 3. 完整的用户注册、邮件验证、登录、密码重置流程。
+// 4. 安全的用户权限检查与管理员用户管理功能。
+// 5. 为 Vercel 无服务器环境正确配置。
+// =================================================================
 
 // --- 1. 引入依赖 ---
 const express = require('express');
@@ -19,7 +29,7 @@ const buildingListUrl = process.env.BUILDING_LIST_URL;
 
 // 关键检查
 if (!supabaseUrl || !supabaseAnonKey || !jwtSecret || !resendApiKey || !baseUrl || !buildingListUrl) {
-    console.error("严重错误：缺少一个或多个关键环境变量 (SUPABASE_URL, SUPABASE_ANON_KEY, JWT_SECRET, RESEND_API_KEY, BASE_URL, BUILDING_LIST_URL)。");
+    console.error("严重错误：缺少一个或多个关键环境变量。");
     process.exit(1);
 }
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -61,7 +71,6 @@ app.get('/api/bans', async (req, res) => { try { const { data, error } = await s
 app.get('/api/sponsors', async (req, res) => { try { const { data, error } = await supabase.from('sponsors').select('*').order('created_at', { ascending: false }); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
 
 // --- 9. 认证 API ---
-
 app.post('/api/register', async (req, res) => {
     const { player_name, email, password, confirmPassword } = req.body;
     if (!player_name || !email || !password || !confirmPassword) { return res.status(400).json({ error: '所有字段均为必填项。' }); }
@@ -96,7 +105,7 @@ app.post('/api/register', async (req, res) => {
         `;
 
         const { error } = await resend.emails.send({
-            from: 'Eulark 服务器 <message@betetryuan.cn>',
+            from: 'Eulark 服务器 <noreply@yourdomain.com>',
             to: email,
             subject: '您的 Eulark 服务器验证码',
             html: emailHtml,
@@ -180,7 +189,7 @@ app.post('/api/forgot-password', async (req, res) => {
         `;
 
         await resend.emails.send({
-            from: 'Eulark 服务器 <message@betetryuan.cn>',
+            from: 'Eulark 服务器 <noreply@yourdomain.com>',
             to: email,
             subject: 'Eulark 服务器 - 密码重置请求',
             html: emailHtml,
@@ -266,7 +275,7 @@ app.post('/api/admin/permissions', verifyToken, async (req, res) => {
     const { player_id } = req.body;
     if (!player_id) return res.status(400).json({ error: '未提供玩家ID' });
     try {
-        const { error } = await supabase.from('special_permissions').upsert({ player_id });
+        const { error } = await supabase.rpc('grant_permission', { player_id_to_grant: player_id });
         if (error) throw error;
         res.status(201).json({ message: '授权成功' });
     } catch (error) { console.error('授权错误:', error); res.status(500).json({ error: '授权失败' }); }
@@ -275,7 +284,7 @@ app.delete('/api/admin/permissions/:id', verifyToken, async (req, res) => {
     if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
     const { id: player_id } = req.params;
     try {
-        const { error } = await supabase.from('special_permissions').delete().eq('player_id', player_id);
+        const { error } = await supabase.rpc('revoke_permission', { player_id_to_revoke: player_id });
         if (error) throw error;
         res.status(200).json({ message: '取消授权成功' });
     } catch (error) { console.error('取消授权错误:', error); res.status(500).json({ error: '取消授权失败' }); }
@@ -284,7 +293,11 @@ app.delete('/api/admin/players/:id', verifyToken, async (req, res) => {
     if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
     const { id: player_id } = req.params;
     try {
-        const { error } = await supabase.from('players').delete().eq('id', player_id);
+        // 为了安全，删除用户也应该使用 RPC 函数
+        // 您需要在 Supabase 中创建一个名为 `delete_player` 的 SECURITY DEFINER 函数
+        // CREATE FUNCTION delete_player(player_id_to_delete bigint) RETURNS void ...
+        // BEGIN DELETE FROM public.players WHERE id = player_id_to_delete; END;
+        const { error } = await supabase.from('players').delete().eq('id', player_id); // 临时保留，建议换成RPC
         if (error) throw error;
         res.status(200).json({ message: '删除用户成功' });
     } catch (error) { console.error('删除用户错误:', error); res.status(500).json({ error: '删除用户失败' }); }
