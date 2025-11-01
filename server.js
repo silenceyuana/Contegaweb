@@ -1,12 +1,12 @@
 // =================================================================
-// server.js - v9.6 (使用 RPC 函数替代 Service Key - 完整最终版)
+// server.js - v10.0 (完整功能与安全最终版)
 // =================================================================
 // 关键特性:
-// 1. (安全) 客户端初始化使用低权限的 anon key。
-// 2. (安全) 管理员授权/取消授权操作通过调用数据库 RPC 函数完成，不再需要 service_role 密钥。
-// 3. 完整的用户注册、邮件验证、登录、密码重置流程。
-// 4. 安全的用户权限检查与管理员用户管理功能。
-// 5. 为 Vercel 无服务器环境正确配置。
+// 1. (安全) 完全弃用 service_role 密钥，所有管理员操作均通过 RPC 函数完成。
+// 2. (完整) 包含完整的用户注册、邮件验证、登录、密码重置流程。
+// 3. (完整) 包含完整的邮件 HTML 模板内容。
+// 4. (安全) 动态权限链接检查，敏感 URL 不暴露给无权限用户。
+// 5. (完整) 全功能的管理员后台 API，包括用户管理。
 // =================================================================
 
 // --- 1. 引入依赖 ---
@@ -29,7 +29,7 @@ const buildingListUrl = process.env.BUILDING_LIST_URL;
 
 // 关键检查
 if (!supabaseUrl || !supabaseAnonKey || !jwtSecret || !resendApiKey || !baseUrl || !buildingListUrl) {
-    console.error("严重错误：缺少一个或多个关键环境变量。");
+    console.error("严重错误：缺少一个或多个关键环境变量 (SUPABASE_URL, SUPABASE_ANON_KEY, JWT_SECRET, RESEND_API_KEY, BASE_URL, BUILDING_LIST_URL)。");
     process.exit(1);
 }
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -169,22 +169,25 @@ app.post('/api/forgot-password', async (req, res) => {
     if (!email) { return res.status(400).json({ error: '邮箱不能为空。' }); }
     try {
         const { data: player, error: playerError } = await supabase.from('players').select('id, player_name').eq('email', email).single();
-        if (playerError || !player) { return res.status(200).json({ message: '如果该邮箱已注册，您将会收到一封密码重置邮件。' }); }
+        if (playerError && playerError.code !== 'PGRST116') { throw playerError; }
+        if (!player) { return res.status(200).json({ message: '如果该邮箱已注册，您将会收到一封密码重置邮件。' }); }
+        
         const token = crypto.randomBytes(32).toString('hex');
         await supabase.from('password_resets').upsert({ email: email, token: token }, { onConflict: 'email' });
         const resetLink = `${baseUrl}/reset-password.html?token=${token}`;
         
         const emailHtml = `
             <div style="font-family: Arial, 'Microsoft YaHei', sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-                <h1 style="color: #3F51B5;">Eulark 服务器 - 密码重置</h1>
+                <h1 style="color: #3F51B5; text-align: center;">Eulark 服务器 - 密码重置</h1>
                 <p>你好, ${player.player_name}，</p>
                 <p>我们收到了一个重置您账户密码的请求。请点击下方的链接来设置您的新密码。该链接将在1小时后失效。</p>
                 <div style="margin: 20px 0; text-align: center;">
                     <a href="${resetLink}" style="background-color: #3F51B5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px;">重置密码</a>
                 </div>
                 <p>如果您无法点击按钮，请复制以下链接到浏览器地址栏打开：</p>
-                <p style="word-break: break-all; font-size: 12px;">${resetLink}</p>
-                <p>如果您没有请求重置密码，请忽略此邮件。</p>
+                <p style="word-break: break-all; font-size: 12px; color: #777;">${resetLink}</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+                <p style="color: #777; font-size: 12px;">如果您没有请求重置密码，请忽略此邮件。</p>
             </div>
         `;
 
@@ -195,7 +198,7 @@ app.post('/api/forgot-password', async (req, res) => {
             html: emailHtml,
         });
         res.status(200).json({ message: '如果该邮箱已注册，您将会收到一封密码重置邮件。' });
-    } catch (err) { console.error('忘记密码错误:', err); res.status(500).json({ error: '服务器内部错误。' }); }
+    } catch (err) { console.error('忘记密码错误:', err); res.status(500).json({ error: '服务器内部错误，请求处理失败。' }); }
 });
 
 app.post('/api/reset-password', async (req, res) => {
@@ -231,7 +234,6 @@ app.post('/api/contact', verifyToken, async (req, res) => {
     } catch (error) { console.error('提交工单错误:', error); res.status(500).json({ error: '服务器内部错误，提交失败' }); } 
 });
 app.get('/api/player/check-permission', verifyToken, async (req, res) => {
-        console.log("正在为用户检查权限, 用户信息:", req.user); // <--- 添加这行日志
     const { id: playerId } = req.user;
     try {
         const { data, error } = await supabase.from('special_permissions').select('player_id').eq('player_id', playerId).single();
@@ -294,11 +296,7 @@ app.delete('/api/admin/players/:id', verifyToken, async (req, res) => {
     if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
     const { id: player_id } = req.params;
     try {
-        // 为了安全，删除用户也应该使用 RPC 函数
-        // 您需要在 Supabase 中创建一个名为 `delete_player` 的 SECURITY DEFINER 函数
-        // CREATE FUNCTION delete_player(player_id_to_delete bigint) RETURNS void ...
-        // BEGIN DELETE FROM public.players WHERE id = player_id_to_delete; END;
-        const { error } = await supabase.from('players').delete().eq('id', player_id); // 临时保留，建议换成RPC
+        const { error } = await supabase.rpc('delete_player', { player_id_to_delete: player_id });
         if (error) throw error;
         res.status(200).json({ message: '删除用户成功' });
     } catch (error) { console.error('删除用户错误:', error); res.status(500).json({ error: '删除用户失败' }); }
