@@ -1,5 +1,5 @@
 /* =================================================================
-// script.js - v7.2 (安全权限链接)
+// script.js - v7.3 (修复登录后权限链接不显示的BUG)
 // ================================================================= */
 
 const PLAYER_AUTH_TOKEN = localStorage.getItem('playerAuthToken');
@@ -13,10 +13,6 @@ document.addEventListener('DOMContentLoaded', function() {
     updateNavbar();
     updateContactFormUI();
     
-    if (IS_PLAYER_LOGGED_IN) {
-        checkAndShowSpecialLinks();
-    }
-
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
         contactForm.addEventListener('submit', handleContactSubmit);
@@ -113,7 +109,9 @@ function updateNavbar() {
         }
     };
 
-    if (IS_PLAYER_LOGGED_IN && playerInfo && authContainer) {
+    const isLoggedIn = !!localStorage.getItem('playerAuthToken');
+
+    if (isLoggedIn && playerInfo && authContainer) {
         try {
             const user = JSON.parse(playerInfo);
             authContainer.innerHTML = `
@@ -124,6 +122,9 @@ function updateNavbar() {
                         <i class="fas fa-sign-out-alt"></i>
                     </button>
                 </div>`;
+            
+            checkAndShowSpecialLinks();
+
         } catch (e) {
             localStorage.clear();
             showLoginButton();
@@ -147,7 +148,7 @@ function updateContactFormUI() {
     const playerMessageTextarea = document.getElementById('playerMessage');
     const contactSubmitButton = contactForm.querySelector('button[type="submit"]');
 
-    if (!IS_PLAYER_LOGGED_IN) {
+    if (!localStorage.getItem('playerAuthToken')) {
         if (playerMessageTextarea) {
             playerMessageTextarea.disabled = true;
             playerMessageTextarea.placeholder = '请先登录，才能提交工单。';
@@ -180,7 +181,7 @@ async function handleContactSubmit(e) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${PLAYER_AUTH_TOKEN}`
+                'Authorization': `Bearer ${localStorage.getItem('playerAuthToken')}`
             },
             body: JSON.stringify({ message: playerMessage })
         });
@@ -201,10 +202,13 @@ async function handleContactSubmit(e) {
 }
 
 async function checkAndShowSpecialLinks() {
+    const currentAuthToken = localStorage.getItem('playerAuthToken');
+    if (!currentAuthToken) return;
+
     try {
         const response = await fetch('/api/player/check-permission', {
             headers: {
-                'Authorization': `Bearer ${PLAYER_AUTH_TOKEN}`
+                'Authorization': `Bearer ${currentAuthToken}`
             }
         });
 
