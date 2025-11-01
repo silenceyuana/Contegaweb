@@ -105,7 +105,7 @@ app.post('/api/register', async (req, res) => {
         `;
 
         const { error } = await resend.emails.send({
-            from: 'Eulark 服务器 <noreply@yourdomain.com>',
+            from: 'Eulark 服务器 <message@betetryuan.cn>',
             to: email,
             subject: '您的 Eulark 服务器验证码',
             html: emailHtml,
@@ -189,7 +189,7 @@ app.post('/api/forgot-password', async (req, res) => {
         `;
 
         await resend.emails.send({
-            from: 'Eulark 服务器 <noreply@yourdomain.com>',
+            from: 'Eulark 服务器 <message@betetryuan.cn>',
             to: email,
             subject: 'Eulark 服务器 - 密码重置请求',
             html: emailHtml,
