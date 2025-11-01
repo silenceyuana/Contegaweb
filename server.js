@@ -231,6 +231,7 @@ app.post('/api/contact', verifyToken, async (req, res) => {
     } catch (error) { console.error('提交工单错误:', error); res.status(500).json({ error: '服务器内部错误，提交失败' }); } 
 });
 app.get('/api/player/check-permission', verifyToken, async (req, res) => {
+        console.log("正在为用户检查权限, 用户信息:", req.user); // <--- 添加这行日志
     const { id: playerId } = req.user;
     try {
         const { data, error } = await supabase.from('special_permissions').select('player_id').eq('player_id', playerId).single();
