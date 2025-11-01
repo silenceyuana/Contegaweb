@@ -1,5 +1,5 @@
 /* =================================================================
-// script.js - v7.3 (修复登录后权限链接不显示的BUG)
+// script.js - v7.4 (修复平滑滚动与外部链接的冲突)
 // ================================================================= */
 
 const PLAYER_AUTH_TOKEN = localStorage.getItem('playerAuthToken');
@@ -34,13 +34,15 @@ function initializeBaseUI() {
     }
 
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const targetElement = document.querySelector(this.getAttribute('href'));
-            if (targetElement) {
-                targetElement.scrollIntoView({ behavior: 'smooth' });
-            }
-        });
+        if (anchor.getAttribute('href') !== '#') {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetElement = document.querySelector(this.getAttribute('href'));
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        }
     });
 
     window.addEventListener('scroll', () => {
@@ -78,11 +80,9 @@ async function checkServerStatus() {
     const statusText = document.querySelector('.status-text');
     const playerCount = document.querySelector('.player-count');
     if (!statusContainer || !statusText || !playerCount) return;
-
     try {
         const response = await fetch(`https://api.mcsrvstat.us/3/play.eulark.tech`);
         const data = await response.json();
-
         if (data.online) {
             statusContainer.className = 'server-status online';
             statusText.textContent = '在线';
@@ -108,9 +108,7 @@ function updateNavbar() {
             authContainer.innerHTML = '<a href="login.html" class="nav-link"><b>登录</b></a>';
         }
     };
-
     const isLoggedIn = !!localStorage.getItem('playerAuthToken');
-
     if (isLoggedIn && playerInfo && authContainer) {
         try {
             const user = JSON.parse(playerInfo);
@@ -122,9 +120,7 @@ function updateNavbar() {
                         <i class="fas fa-sign-out-alt"></i>
                     </button>
                 </div>`;
-            
             checkAndShowSpecialLinks();
-
         } catch (e) {
             localStorage.clear();
             showLoginButton();
@@ -144,18 +140,14 @@ function logout() {
 function updateContactFormUI() {
     const contactForm = document.getElementById('contactForm');
     if (!contactForm) return;
-
     const playerMessageTextarea = document.getElementById('playerMessage');
     const contactSubmitButton = contactForm.querySelector('button[type="submit"]');
-
     if (!localStorage.getItem('playerAuthToken')) {
         if (playerMessageTextarea) {
             playerMessageTextarea.disabled = true;
             playerMessageTextarea.placeholder = '请先登录，才能提交工单。';
         }
-        if (contactSubmitButton) {
-            contactSubmitButton.disabled = true;
-        }
+        if (contactSubmitButton) { contactSubmitButton.disabled = true; }
     }
 }
 
@@ -165,17 +157,14 @@ async function handleContactSubmit(e) {
     const messageDiv = document.getElementById('formMessage');
     const submitButton = form.querySelector('button[type="submit"]');
     const playerMessage = document.getElementById('playerMessage').value.trim();
-
     if (!playerMessage) {
         messageDiv.textContent = '消息内容不能为空！';
         messageDiv.style.color = '#e74c3c';
         return;
     }
-
     submitButton.disabled = true;
     submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在发送...';
     messageDiv.textContent = '';
-
     try {
         const response = await fetch('/api/contact', {
             method: 'POST',
@@ -186,9 +175,7 @@ async function handleContactSubmit(e) {
             body: JSON.stringify({ message: playerMessage })
         });
         const result = await response.json();
-        if (!response.ok) {
-            throw new Error(result.error || '发生未知错误');
-        }
+        if (!response.ok) { throw new Error(result.error || '发生未知错误'); }
         messageDiv.textContent = '消息发送成功！管理员将会尽快处理。';
         messageDiv.style.color = '#2ecc71';
         form.reset();
@@ -204,25 +191,20 @@ async function handleContactSubmit(e) {
 async function checkAndShowSpecialLinks() {
     const currentAuthToken = localStorage.getItem('playerAuthToken');
     if (!currentAuthToken) return;
-
     try {
         const response = await fetch('/api/player/check-permission', {
             headers: {
                 'Authorization': `Bearer ${currentAuthToken}`
             }
         });
-
         if (!response.ok) {
             console.error('无法检查特殊权限:', response.statusText);
             return;
         }
-
         const data = await response.json();
-        
         if (data.hasPermission && data.url) {
             const linkContainer = document.getElementById('building-list-link');
             const linkAnchor = document.getElementById('building-list-anchor');
-
             if (linkContainer && linkAnchor) {
                 linkAnchor.href = data.url;
                 linkAnchor.target = '_blank';
@@ -235,15 +217,7 @@ async function checkAndShowSpecialLinks() {
 }
 
 function escapeHTML(str) {
-    if (typeof str !== 'string' && str !== null && str !== undefined) {
-        str = str.toString();
-    }
+    if (typeof str !== 'string' && str !== null && str !== undefined) { str = str.toString(); }
     if (!str) return '';
-    return str.replace(/[&<>"']/g, match => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    }[match]));
+    return str.replace(/[&<>"']/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]));
 }
