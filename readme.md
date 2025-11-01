@@ -97,7 +97,7 @@ CREATE POLICY "Enable delete for users based on user_id" ON public.server_rules 
 -- 你可以使用在线工具或本地脚本生成。
 -- 例如: 'admin' / 'password123'
 INSERT INTO public.users (username, password_hash) VALUES
-('yuan', '$2a$12$AqudxU7A7V3zKrzJXgg0Wur/REfcFrqZ.X5mRJxQHLONckeQSwvOq');
+('Majh0128', '$2a$12$uGhNVwDho2mK8YD.buFMNuDQOwaXasNjMJG4cp5DqnM7EXj.RSNWC');
 
 
 
