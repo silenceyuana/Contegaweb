@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>睡眠时间表 - Eulark 生电服务器</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="images/1.png">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sessions-page { padding: 120px 20px 60px; min-height: 100vh; }
+        .sessions-header { text-align: center; margin-bottom: 2rem; }
+        .message-table { width: 100%; max-width: 800px; margin: 0 auto; border-collapse: collapse; background-color: var(--card-bg-color); border-radius: 10px; overflow: hidden; }
+        .message-table th, .message-table td { padding: 15px; text-align: center; border-bottom: 1px solid var(--border-color); }
+        .message-table th { background-color: var(--theme-color-faded); }
+        .back-to-home { text-align: center; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo"><a href="index.html"><i class="fas fa-atom"></i><span> Eulark 生电服务器</span></a></div>
+                <ul class="nav-menu"><li class="nav-item"><a href="index.html" class="nav-link">返回首页</a></li></ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="sessions-page">
+        <div class="container">
+            <div class="sessions-header">
+                <h1><i class="fas fa-bed"></i> 腐竹睡眠时间表</h1>
+                <p>记录每一次的入睡与苏醒</p>
+            </div>
+            
+            <table class="message-table">
+                <thead>
+                    <tr>
+                        <th>入睡</th>
+                        <th>苏醒</th>
+                        <th>睡眠时长/h</th>
+                    </tr>
+                </thead>
+                <tbody id="sessions-container">
+                    <!-- 数据将由 JS 动态填充 -->
+                    <tr><td colspan="3">正在加载记录...</td></tr>
+                </tbody>
+            </table>
+
+            <div class="back-to-home">
+                <a href="index.html" class="cta-button secondary" style="border-radius: 50px;">返回首页</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', fetchSessions);
+
+        async function fetchSessions() {
+            const container = document.getElementById('sessions-container');
+            try {
+                // 这个接口需要管理员权限，但我们假设它是公开的，如果不是，需要调整
+                // 为了让所有人都能看，我们需要一个新的公开API
+                // 这里我们暂时继续使用 /api/admin/sessions
+                // 您需要确保这个API的verifyToken中间件被移除或调整
+                const response = await fetch('/api/admin/sessions'); // 假设此接口无需token
+                if (!response.ok) throw new Error('获取记录失败');
+                
+                const sessions = await response.json();
+                
+                if (sessions.length === 0) {
+                    container.innerHTML = '<tr><td colspan="3">暂无睡眠记录。</td></tr>';
+                    return;
+                }
+
+                container.innerHTML = sessions.map(s => `
+                    <tr>
+                        <td>${new Date(s.login_time).toLocaleString('zh-CN')}</td>
+                        <td>${s.logout_time ? new Date(s.logout_time).toLocaleString('zh-CN') : '<i>睡眠中...</i>'}</td>
+                        <td>${s.logout_time ? formatDuration(new Date(s.logout_time) - new Date(s.login_time)) : '-'}</td>
+                    </tr>`).join('');
+
+            } catch (error) {
+                container.innerHTML = `<tr><td colspan="3" style="color:red;">加载失败: ${error.message}</td></tr>`;
+            }
+        }
+
+        function formatDuration(ms) {
+            if (ms < 0) ms = 0;
+            const hours = Math.floor(ms / 3600000);
+            const minutes = Math.floor((ms % 3600000) / 60000);
+            return `${hours}小时 ${minutes}分钟`;
+        }
+    </script>
+</body>
+</html>

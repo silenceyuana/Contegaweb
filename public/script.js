@@ -1,5 +1,5 @@
 /* =================================================================
-// script.js - v7.4 (修复平滑滚动与外部链接的冲突)
+// script.js - v7.6 (更新彩蛋链接到 sleep.html)
 // ================================================================= */
 
 const PLAYER_AUTH_TOKEN = localStorage.getItem('playerAuthToken');
@@ -51,6 +51,23 @@ function initializeBaseUI() {
             header.style.boxShadow = window.scrollY > 50 ? '0 2px 20px rgba(0, 0, 0, 0.1)' : 'none';
         }
     });
+
+    const secretIcon = document.getElementById('secret-icon');
+    if (secretIcon) {
+        let clickCount = 0;
+        let clickTimer = null;
+        secretIcon.addEventListener('click', () => {
+            clickCount++;
+            if (clickCount === 1) {
+                clickTimer = setTimeout(() => { clickCount = 0; }, 1500);
+            }
+            if (clickCount === 3) {
+                clearTimeout(clickTimer);
+                window.open('sleep.html', '_blank');
+                clickCount = 0;
+            }
+        });
+    }
 
     checkServerStatus();
     setInterval(checkServerStatus, 60000);

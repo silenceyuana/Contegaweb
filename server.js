@@ -69,6 +69,20 @@ app.get('/api/rules', async (req, res) => { try { const { data, error } = await 
 app.get('/api/commands', async (req, res) => { try { const { data, error } = await supabase.from('server_commands').select('*').order('id'); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
 app.get('/api/bans', async (req, res) => { try { const { data, error } = await supabase.from('banned_players').select('*').order('ban_date', { ascending: false }); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
 app.get('/api/sponsors', async (req, res) => { try { const { data, error } = await supabase.from('sponsors').select('*').order('created_at', { ascending: false }); if (error) throw error; res.json(data); } catch (error) { res.status(500).json({ error: error.message }); } });
+// (新) 新增的公共 API，用于获取在线记录
+app.get('/api/sessions', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('player_sessions')
+            .select('*')
+            .order('login_time', { ascending: false });
+        if (error) throw error;
+        res.json(data);
+    } catch (err) {
+        console.error('获取公共在线记录错误:', err);
+        res.status(500).json({ error: '获取在线记录失败' });
+    }
+});
 
 // --- 9. 认证 API ---
 app.post('/api/register', async (req, res) => {
@@ -301,6 +315,50 @@ app.delete('/api/admin/players/:id', verifyToken, async (req, res) => {
         res.status(200).json({ message: '删除用户成功' });
     } catch (error) { console.error('删除用户错误:', error); res.status(500).json({ error: '删除用户失败' }); }
 });
+
+// 玩家在线时间管理 API
+app.get('/api/admin/sessions', verifyToken, async (req, res) => {
+    if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
+    try {
+        const { data, error } = await supabase
+            .from('player_sessions')
+            .select('*')
+            .order('login_time', { ascending: false });
+        if (error) throw error;
+        res.json(data);
+    } catch (err) { 
+        console.error('获取在线记录错误:', err);
+        res.status(500).json({ error: '获取在线记录失败' }); 
+    }
+});
+
+app.post('/api/admin/sessions/start', verifyToken, async (req, res) => {
+    if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
+    const { player_id, player_name } = req.body;
+    if (!player_id || !player_name) return res.status(400).json({ error: '玩家ID和名称不能为空' });
+    try {
+        const { error } = await supabase.rpc('start_player_session', { p_id: player_id, p_name: player_name });
+        if (error) throw error;
+        res.status(201).json({ message: '已记录上线' });
+    } catch (err) { 
+        console.error('记录上线错误:', err);
+        res.status(500).json({ error: '记录上线失败' }); 
+    }
+});
+
+app.patch('/api/admin/sessions/end/:sessionId', verifyToken, async (req, res) => {
+    if (!req.user.isAdmin) return res.status(403).json({ error: '仅管理员可访问' });
+    const { sessionId } = req.params;
+    try {
+        const { error } = await supabase.rpc('end_player_session', { session_id_to_end: sessionId });
+        if (error) throw error;
+        res.status(200).json({ message: '已记录下线' });
+    } catch (err) { 
+        console.error('记录下线错误:', err);
+        res.status(500).json({ error: '记录下线失败' }); 
+    }
+});
+
 
 // --- 12. 启动与导出 ---
 if (process.env.NODE_ENV !== 'production') {
