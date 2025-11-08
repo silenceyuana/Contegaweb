@@ -21,10 +21,10 @@
         .message-table th { background-color: var(--theme-color-faded); }
         .action-buttons { white-space: nowrap; }
         .action-buttons button, .action-btn { background: none; border: 1px solid var(--text-color-secondary); color: var(--text-color); padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-right: 5px; transition: all 0.2s ease; font-size: 0.85rem; }
-        .btn-grant, .btn-login { border-color: #2ecc71; color: #2ecc71; }
-        .btn-grant:hover, .btn-login:hover { background: #2ecc71; color: #fff; }
-        .btn-revoke, .btn-logout { border-color: #f39c12; color: #f39c12; }
-        .btn-revoke:hover, .btn-logout:hover { background: #f39c12; color: #fff; }
+        .btn-grant { border-color: #2ecc71; color: #2ecc71; }
+        .btn-grant:hover { background: #2ecc71; color: #fff; }
+        .btn-revoke { border-color: #f39c12; color: #f39c12; }
+        .btn-revoke:hover { background: #f39c12; color: #fff; }
         .btn-delete { border-color: #e74c3c; color: #e74c3c; }
         .btn-delete:hover { background: #e74c3c; color: #fff; }
         .permission-true, .status-online { color: #2ecc71; font-weight: bold; }
@@ -48,7 +48,7 @@
             <div class="dashboard-tabs">
                 <button class="tab-btn active" onclick="switchTab('tickets', this)"><i class="fas fa-envelope-open-text"></i> 工单管理</button>
                 <button class="tab-btn" onclick="switchTab('users', this)"><i class="fas fa-users-cog"></i> 用户管理</button>
-                <button class="tab-btn" onclick="switchTab('sessions', this)"><i class="fas fa-clock"></i> 在线管理</button>
+                <button class="tab-btn" onclick="switchTab('owner', this)"><i class="fas fa-user-clock"></i> 服主状态</button>
             </div>
             
             <div class="admin-info"><button class="logout-btn" onclick="logout()">安全退出</button></div>
@@ -67,17 +67,16 @@
                 </table>
             </div>
             
-            <div id="sessions-view" style="display: none;">
-                <h3>当前玩家状态</h3>
-                <table class="message-table" style="margin-bottom: 2rem;">
-                    <thead><tr><th>腐竹名</th><th>状态</th><th>操作</th></tr></thead>
-                    <tbody id="playerStatusContainer"></tbody>
-                </table>
-                <h3>历史在线记录 (最近50条)</h3>
-                <table class="message-table">
-                    <thead><tr><th>腐竹名</th><th>入睡时间</th><th>苏醒时间</th><th>睡眠时长</th></tr></thead>
-                    <tbody id="sessionHistoryContainer"></tbody>
-                </table>
+            <div id="owner-view" style="display: none;">
+                <div class="login-container" style="max-width: 500px; margin: 2rem auto;">
+                    <h3>当前状态: <span id="owner-current-status">加载中...</span></h3>
+                    <p style="margin: 1rem 0; color: var(--text-color-secondary);">点击下方按钮来更新您的状态。</p>
+                    <div style="display: flex; gap: 1rem;">
+                        <button id="btn-sleep" class="minecraft-btn" style="flex: 1;" onclick="setSleep()">我睡了</button>
+                        <button id="btn-wake" class="minecraft-btn" style="flex: 1; background: var(--card-bg-color);" onclick="setWake()">我醒了</button>
+                    </div>
+                    <div id="owner-message" class="message" style="margin-top: 1rem;"></div>
+                </div>
             </div>
 
             <div id="loadingIndicator" style="text-align: center; padding: 20px; font-size: 1.2rem; display: none;">
@@ -103,7 +102,7 @@
             element.classList.add('active');
             document.getElementById('tickets-view').style.display = 'none';
             document.getElementById('users-view').style.display = 'none';
-            document.getElementById('sessions-view').style.display = 'none';
+            document.getElementById('owner-view').style.display = 'none';
             document.getElementById(`${tabName}-view`).style.display = 'block';
 
             if (tabName === 'tickets') {
@@ -112,9 +111,9 @@
             } else if (tabName === 'users') {
                 document.getElementById('dashboard-title').innerHTML = '<i class="fas fa-users-cog"></i> 用户管理';
                 fetchPlayers();
-            } else if (tabName === 'sessions') {
-                document.getElementById('dashboard-title').innerHTML = '<i class="fas fa-clock"></i> 在线时间管理';
-                fetchSessionsAndPlayers();
+            } else if (tabName === 'owner') {
+                document.getElementById('dashboard-title').innerHTML = '<i class="fas fa-user-clock"></i> 服主状态管理';
+                fetchOwnerStatus();
             }
         }
 
@@ -197,61 +196,31 @@
         async function grantPermission(playerId) {
             if (!confirm(`确定要为 ID 为 ${playerId} 的用户授予建筑表权限吗？`)) return;
             try {
-                const row = document.getElementById(`player-row-${playerId}`);
                 const response = await fetch('/api/admin/permissions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
                     body: JSON.stringify({ player_id: playerId })
                 });
-                if (!response.ok) {
-                    throw new Error((await response.json()).error || '授权失败');
-                }
-                // alert('授权成功！'); // 可以移除，因为有乐观更新
-                if (row) {
-                    const permissionCell = row.cells[4];
-                    const actionCell = row.cells[5];
-                    permissionCell.textContent = '是';
-                    permissionCell.className = 'permission-true';
-                    actionCell.innerHTML = `
-                        <button class="action-btn btn-revoke" onclick="revokePermission(${playerId})">取消授权</button>
-                        <button class="action-btn btn-delete" onclick="deletePlayer(${playerId}, '${row.cells[1].textContent}')">删除用户</button>
-                    `;
-                } else {
-                    fetchPlayers();
-                }
+                if (!response.ok) throw new Error((await response.json()).error || '授权失败');
+                alert('授权成功！');
+                fetchPlayers();
             } catch (error) {
                 alert(`错误: ${error.message}`);
-                fetchPlayers();
             }
         }
         
         async function revokePermission(playerId) {
             if (!confirm(`确定要取消 ID 为 ${playerId} 的用户的建筑表权限吗？`)) return;
             try {
-                 const row = document.getElementById(`player-row-${playerId}`);
                 const response = await fetch(`/api/admin/permissions/${playerId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${adminToken}` }
                 });
-                if (!response.ok) {
-                    throw new Error((await response.json()).error || '取消授权失败');
-                }
-                // alert('取消授权成功！');
-                if (row) {
-                    const permissionCell = row.cells[4];
-                    const actionCell = row.cells[5];
-                    permissionCell.textContent = '否';
-                    permissionCell.className = 'permission-false';
-                    actionCell.innerHTML = `
-                        <button class="action-btn btn-grant" onclick="grantPermission(${playerId})">授予权限</button>
-                        <button class="action-btn btn-delete" onclick="deletePlayer(${playerId}, '${row.cells[1].textContent}')">删除用户</button>
-                    `;
-                } else {
-                    fetchPlayers();
-                }
+                if (!response.ok) throw new Error((await response.json()).error || '取消授权失败');
+                alert('取消授权成功！');
+                fetchPlayers();
             } catch (error) {
                 alert(`错误: ${error.message}`);
-                fetchPlayers();
             }
         }
         
@@ -270,86 +239,66 @@
             }
         }
 
-        async function fetchSessionsAndPlayers() {
-            const statusContainer = document.getElementById('playerStatusContainer');
-            const historyContainer = document.getElementById('sessionHistoryContainer');
-            const loading = document.getElementById('loadingIndicator');
-            loading.style.display = 'block';
-            statusContainer.innerHTML = '';
-            historyContainer.innerHTML = '';
+        async function fetchOwnerStatus() {
+            const statusSpan = document.getElementById('owner-current-status');
+            const messageDiv = document.getElementById('owner-message');
+            const sleepBtn = document.getElementById('btn-sleep');
+            const wakeBtn = document.getElementById('btn-wake');
+            statusSpan.textContent = '加载中...';
+            messageDiv.textContent = '';
             try {
-                const [playersRes, sessionsRes] = await Promise.all([
-                    fetch('/api/admin/players', { headers: { 'Authorization': `Bearer ${adminToken}` } }),
-                    fetch('/api/admin/sessions', { headers: { 'Authorization': `Bearer ${adminToken}` } })
-                ]);
-                if (!playersRes.ok || !sessionsRes.ok) throw new Error('获取数据失败');
-                const players = await playersRes.json();
-                const sessions = await sessionsRes.json();
-
-                const onlineSessions = new Map();
-                sessions.forEach(s => { if (!s.logout_time) { onlineSessions.set(s.player_id, s.id); } });
-
-                statusContainer.innerHTML = players.map(p => {
-                    const isOnline = onlineSessions.has(p.id);
-                    const sessionId = isOnline ? onlineSessions.get(p.id) : null;
-                    return `
-                        <tr>
-                            <td>${escapeHTML(p.player_name)}</td>
-                            <td class="${isOnline ? 'status-online' : 'status-offline'}">${isOnline ? '在线' : '离线'}</td>
-                            <td class="action-buttons">
-                                ${isOnline 
-                                    ? `<button class="action-btn btn-logout" onclick="endSession(${sessionId})">记录下线</button>`
-                                    : `<button class="action-btn btn-login" onclick="startSession(${p.id}, '${escapeHTML(p.player_name)}')">记录上线</button>`
-                                }
-                            </td>
-                        </tr>`;
-                }).join('');
-
-                historyContainer.innerHTML = sessions.slice(0, 50).map(s => `
-                    <tr>
-                        <td>${escapeHTML(s.player_name)}</td>
-                        <td>${new Date(s.login_time).toLocaleString('zh-CN')}</td>
-                        <td>${s.logout_time ? new Date(s.logout_time).toLocaleString('zh-CN') : '<i class="status-online">在线中...</i>'}</td>
-                        <td>${s.logout_time ? formatDuration(new Date(s.logout_time) - new Date(s.login_time)) : '-'}</td>
-                    </tr>`).join('');
+                const response = await fetch('/api/owner-status');
+                if (!response.ok) throw new Error('获取状态失败');
+                const status = await response.json();
+                if (status.is_sleeping) {
+                    statusSpan.textContent = '睡眠中';
+                    statusSpan.className = 'status-offline';
+                    sleepBtn.disabled = true;
+                    wakeBtn.disabled = false;
+                } else {
+                    statusSpan.textContent = '苏醒';
+                    statusSpan.className = 'status-online';
+                    sleepBtn.disabled = false;
+                    wakeBtn.disabled = true;
+                }
             } catch (error) {
-                statusContainer.innerHTML = `<tr><td colspan="3" style="color:red;">加载失败: ${error.message}</td></tr>`;
-                historyContainer.innerHTML = `<tr><td colspan="4" style="color:red;">加载失败: ${error.message}</td></tr>`;
-            } finally {
-                loading.style.display = 'none';
+                statusSpan.textContent = '获取失败';
+                messageDiv.textContent = error.message;
             }
         }
 
-        async function startSession(playerId, playerName) {
+        async function setSleep() {
+            const messageDiv = document.getElementById('owner-message');
+            messageDiv.textContent = '正在更新...';
             try {
-                const response = await fetch('/api/admin/sessions/start', {
+                const response = await fetch('/api/admin/sleep', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-                    body: JSON.stringify({ player_id: playerId, player_name: playerName })
-                });
-                if (!response.ok) throw new Error('操作失败');
-                fetchSessionsAndPlayers();
-            } catch (error) { alert(`错误: ${error.message}`); }
-        }
-
-        async function endSession(sessionId) {
-            try {
-                const response = await fetch(`/api/admin/sessions/end/${sessionId}`, {
-                    method: 'PATCH',
                     headers: { 'Authorization': `Bearer ${adminToken}` }
                 });
                 if (!response.ok) throw new Error('操作失败');
-                fetchSessionsAndPlayers();
-            } catch (error) { alert(`错误: ${error.message}`); }
-        }
-
-        function formatDuration(ms) {
-            if (ms < 0) ms = 0;
-            const hours = Math.floor(ms / 3600000);
-            const minutes = Math.floor((ms % 3600000) / 60000);
-            return `${hours}小时 ${minutes}分钟`;
+                messageDiv.textContent = '状态已更新为“睡眠中”。';
+                fetchOwnerStatus();
+            } catch (error) {
+                messageDiv.textContent = `错误: ${error.message}`;
+            }
         }
         
+        async function setWake() {
+            const messageDiv = document.getElementById('owner-message');
+            messageDiv.textContent = '正在更新...';
+            try {
+                const response = await fetch('/api/admin/wake', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if (!response.ok) throw new Error('操作失败');
+                messageDiv.textContent = '状态已更新为“苏醒”。';
+                fetchOwnerStatus();
+            } catch (error) {
+                messageDiv.textContent = `错误: ${error.message}`;
+            }
+        }
+
         function logout() {
             localStorage.removeItem('adminAuthToken');
             alert('已安全退出');
